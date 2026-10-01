@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+  background: #0a1229;
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+}
+select option { background-color: #0b1733; color: #e2e8f0; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148,163,184,.2); border-radius: 8px; }
