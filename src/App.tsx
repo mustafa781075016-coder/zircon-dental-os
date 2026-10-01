@@ -4,8 +4,8 @@ import {
   LayoutDashboard, Users, Calendar, LogOut, Menu, Bell, X,
   Stethoscope, Syringe, Receipt, Image as ImageIcon,
   FileText, Settings as SettingsIcon, Plus, Search, Mail, Lock,
-  Loader2, ArrowRight, Save, Trash2, Edit3, MessageCircle,
-  Tooth, CheckCircle, Clock, Phone, DollarSign, Upload
+    Loader2, ArrowRight, Save, Trash2, Edit3, MessageCircle,
+  Clock, DollarSign
 } from 'lucide-react';
 
 const supabase = createClient(
