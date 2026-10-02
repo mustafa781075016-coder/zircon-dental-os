@@ -134,7 +134,7 @@ function Login({ onLogin }: { onLogin: (user:any)=>void }) {
   );
 }
 
-// ====== TOOTH CHART ======
+// ====== TOOTH CHART (Patient Detail) ======
 const TEETH_UPPER = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
 const TEETH_LOWER = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
 const TOOTH_COLORS: any = { 1:'#e06a6a', 2:'#b78a4a', 3:'#2ea86a', 4:'#3a8ab5', 5:'#6b4c9a', 6:'#d16a8a', 7:'#a3b82a', 8:'#7a8a2e' };
@@ -237,72 +237,129 @@ function SearchSelect({ placeholder, options, value, onSelect, displayKey='name'
   );
 }
 
-// ====== JAW MODAL ======
-function JawModalBulk({ selected, onToggle, onClose, treatName, doctorName, cost }:{ selected:number[], onToggle:(n:number)=>void, onClose:()=>void, treatName:string, doctorName:string, cost:number }){
-  const ToothSVG = ({ palmer, has }: { palmer:number, has:boolean }) => {
-    let path = "";
-    if(palmer===1) path = "M 12 8 Q 18 2 24 8 Q 22 18 20 28 Q 18 35 16 28 Q 14 18 12 8 Z";
-    else if(palmer===2) path = "M 12 10 Q 18 4 24 10 Q 23 20 20 30 Q 18 36 16 30 Q 13 20 12 10 Z";
-    else if(palmer===3) path = "M 12 12 Q 18 2 24 12 Q 23 22 20 40 Q 18 50 16 40 Q 13 22 12 12 Z";
-    else if(palmer===4 || palmer===5) path = "M 10 12 Q 18 6 26 12 Q 27 20 24 32 Q 22 38 18 38 Q 14 38 12 32 Q 9 20 10 12 Z";
-    else path = "M 8 12 Q 12 6 18 8 Q 24 6 28 12 Q 30 20 28 30 Q 26 38 22 38 Q 20 30 18 38 Q 16 38 14 30 Q 10 34 8 30 Q 6 20 8 12 Z";
-    return <svg viewBox="0 0 36 52" className="w-full h-full"><path d={path} fill={has ? '#10b981' : '#fefefe'} stroke={has ? '#10b981' : '#1e293b'} strokeWidth={has ? "1.2" : "0.7"} /></svg>
+// ====== TOOTH ART - realistic tooth shapes ======
+function ToothArt({ num, selected }: { num: number, selected: boolean }) {
+  const palmer = num % 10;
+  const fill = selected ? '#10b981' : '#f8f5ee';
+  const stroke = selected ? '#065f46' : '#1e3a5f';
+  const sw = 1.2;
+  const P = { fill, stroke, strokeWidth: sw, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
+  let art: any;
+  if (palmer === 1) {
+    art = <>
+      <path d="M 12 6 Q 25 3 38 6 L 38 28 Q 38 34 32 34 L 18 34 Q 12 34 12 28 Z" {...P} />
+      <path d="M 22 34 L 24 73 Q 25 76 26 73 L 28 34 Z" {...P} />
+    </>;
+  } else if (palmer === 2) {
+    art = <>
+      <path d="M 14 6 Q 25 4 36 6 L 36 28 Q 36 33 31 33 L 19 33 Q 14 33 14 28 Z" {...P} />
+      <path d="M 22 33 L 24 70 Q 25 73 26 70 L 28 33 Z" {...P} />
+    </>;
+  } else if (palmer === 3) {
+    art = <>
+      <path d="M 14 10 Q 20 0 25 0 Q 30 0 36 10 L 36 28 Q 36 34 30 34 L 20 34 Q 14 34 14 28 Z" {...P} />
+      <path d="M 22 34 L 24 74 Q 25 78 26 74 L 28 34 Z" {...P} />
+    </>;
+  } else if (palmer === 4) {
+    art = <>
+      <path d="M 10 18 Q 13 8 18 10 Q 20 6 25 6 Q 30 6 32 10 Q 37 8 40 18 L 40 30 Q 40 36 35 36 L 15 36 Q 10 36 10 30 Z" {...P} />
+      <path d="M 21 36 L 24 72 Q 25 76 26 72 L 29 36 Z" {...P} />
+    </>;
+  } else if (palmer === 5) {
+    art = <>
+      <path d="M 11 18 Q 14 9 19 11 Q 22 7 25 7 Q 28 7 31 11 Q 36 9 39 18 L 39 30 Q 39 35 34 35 L 16 35 Q 11 35 11 30 Z" {...P} />
+      <path d="M 21 35 L 24 68 Q 25 72 26 68 L 29 35 Z" {...P} />
+    </>;
+  } else if (palmer === 6) {
+    art = <>
+      <path d="M 6 22 Q 9 12 13 14 Q 16 10 20 13 Q 22 10 25 13 Q 28 10 30 13 Q 34 10 37 14 Q 41 12 44 22 L 44 32 Q 42 40 36 40 L 14 40 Q 8 40 6 32 Z" {...P} />
+      <path d="M 17 40 L 13 68 Q 13 74 18 74 Q 22 74 22 68 L 22 40 Z" {...P} />
+      <path d="M 33 40 L 37 68 Q 37 74 32 74 Q 28 74 28 68 L 28 40 Z" {...P} />
+    </>;
+  } else if (palmer === 7) {
+    art = <>
+      <path d="M 6 22 Q 9 13 13 15 Q 16 11 20 14 Q 22 11 25 14 Q 28 11 30 14 Q 34 11 37 15 Q 41 13 44 22 L 44 32 Q 42 40 36 40 L 14 40 Q 8 40 6 32 Z" {...P} />
+      <path d="M 17 40 L 13 65 Q 13 71 18 71 Q 22 71 22 65 L 22 40 Z" {...P} />
+      <path d="M 33 40 L 37 65 Q 37 71 32 71 Q 28 71 28 65 L 28 40 Z" {...P} />
+    </>;
+  } else {
+    art = <>
+      <path d="M 9 24 Q 12 15 15 17 Q 18 13 21 16 Q 24 13 27 16 Q 30 13 33 17 Q 36 15 40 24 L 40 32 Q 38 38 33 38 L 17 38 Q 12 38 10 32 Z" {...P} />
+      <path d="M 18 38 L 15 62 Q 15 67 19 67 Q 22 67 22 62 L 22 38 Z" {...P} />
+      <path d="M 30 38 L 33 62 Q 33 67 29 67 Q 26 67 26 62 L 26 38 Z" {...P} />
+    </>;
   }
-  const Cell = ({fdi,palmer,quad}:{fdi:number,palmer:number,quad:string})=>{
-    const sel=selected.includes(fdi);
-    const cmap:any={1:'#ff6b6b',2:'#e0a040',3:'#2ecc71',4:'#3498db',5:'#9b59b6',6:'#e84393',7:'#f1c40f',8:'#8bc34a'};
-    return <button onClick={()=>onToggle(fdi)} className={`flex flex-col items-center py-2 px-1 rounded-2xl border min-h-[100px] md:min-h-[125px] transition-all ${sel?'bg-emerald-500/20 border-emerald-400/60 scale-[1.03] shadow-lg':'bg-white/[0.03] border-white/10 hover:bg-white/[0.06]'}`}>
-      <div className="w-7 h-9 md:w-9 md:h-11"><ToothSVG palmer={palmer} has={sel}/></div>
-      <span className="text-[12px] font-bold mt-1" style={{color: sel?'#10b981': cmap[palmer]}}>{palmer}</span>
-      <span className="text-[9px] text-slate-500">{fdi}</span>
-      <span className="text-[8px] text-slate-600">{quad}</span>
-    </button>
-  }
-  return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 md:p-4" onClick={onClose}>
-      <div className="bg-[#0a1028] border border-white/10 rounded-2xl w-full max-w-[96vw] md:max-w-5xl max-h-[96vh] overflow-auto" onClick={e=>e.stopPropagation()}>
-        <div className="p-3 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#0a1028] z-20">
-          <h3 className="text-white font-bold text-xs md:text-base">مخطط الأسنان - اختر الأسنان</h3>
-          <button onClick={onClose} className="p-2 rounded-xl bg-white/10 text-white"><X size={18}/></button>
+  return <svg viewBox="0 0 50 80" className="w-full h-full">{art}</svg>;
+}
+
+// ====== JAW MODAL - compact, matches reference image, no clearing on close ======
+function JawModalBulk({ selected, onToggle, onClose, treatName, doctorName, cost }: { selected:number[], onToggle:(n:number)=>void, onClose:()=>void, treatName:string, doctorName:string, cost:number }) {
+  const Cell = ({ fdi }: { fdi: number }) => {
+    const palmer = fdi % 10;
+    const sel = selected.includes(fdi);
+    const cmap: any = { 1:'#ef4444', 2:'#f59e0b', 3:'#10b981', 4:'#3b82f6', 5:'#8b5cf6', 6:'#ec4899', 7:'#84cc16', 8:'#65a30d' };
+    return (
+      <button onClick={() => onToggle(fdi)} className={`flex flex-col items-center transition-all ${sel ? 'scale-105' : ''}`}>
+        <div className={`w-full aspect-[5/8] p-0.5 rounded-lg ${sel ? 'bg-emerald-500/20 ring-2 ring-emerald-400' : 'hover:bg-white/5'}`}>
+          <ToothArt num={fdi} selected={sel} />
         </div>
-        <div className="p-3 md:p-5">
-          <div className="text-center text-[10px] md:text-xs text-slate-400 mb-3">الفك العلوي</div>
-          <div className="grid grid-cols-8 gap-1.5 md:gap-2">
-            {[{fdi:18,p:8,q:'UR'},{fdi:17,p:7,q:'UR'},{fdi:16,p:6,q:'UR'},{fdi:15,p:5,q:'UR'},{fdi:14,p:4,q:'UR'},{fdi:13,p:3,q:'UR'},{fdi:12,p:2,q:'UR'},{fdi:11,p:1,q:'UR'}].map(t=><Cell key={t.fdi} {...t}/>)}
-          </div>
-          <div className="grid grid-cols-8 gap-1.5 md:gap-2 mt-2">
-            {[{fdi:21,p:1,q:'UL'},{fdi:22,p:2,q:'UL'},{fdi:23,p:3,q:'UL'},{fdi:24,p:4,q:'UL'},{fdi:25,p:5,q:'UL'},{fdi:26,p:6,q:'UL'},{fdi:27,p:7,q:'UL'},{fdi:28,p:8,q:'UL'}].map(t=><Cell key={t.fdi} {...t}/>)}
-          </div>
-          <div className="my-5 h-px bg-red-500/80 w-full"></div>
-          <div className="text-center text-[10px] md:text-xs text-slate-400 mb-3">الفك السفلي</div>
-          <div className="grid grid-cols-8 gap-1.5 md:gap-2">
-            {[{fdi:48,p:8,q:'LR'},{fdi:47,p:7,q:'LR'},{fdi:46,p:6,q:'LR'},{fdi:45,p:5,q:'LR'},{fdi:44,p:4,q:'LR'},{fdi:43,p:3,q:'LR'},{fdi:42,p:2,q:'LR'},{fdi:41,p:1,q:'LR'}].map(t=><Cell key={t.fdi} {...t}/>)}
-          </div>
-          <div className="grid grid-cols-8 gap-1.5 md:gap-2 mt-2">
-            {[{fdi:31,p:1,q:'LL'},{fdi:32,p:2,q:'LL'},{fdi:33,p:3,q:'LL'},{fdi:34,p:4,q:'LL'},{fdi:35,p:5,q:'LL'},{fdi:36,p:6,q:'LL'},{fdi:37,p:7,q:'LL'},{fdi:38,p:8,q:'LL'}].map(t=><Cell key={t.fdi} {...t}/>)}
-          </div>
-          {selected.length>0 && (
-            <div className="mt-6 rounded-xl bg-white/5 border border-white/10 overflow-hidden">
-              <div className="p-3 text-sm font-bold text-white flex justify-between"><span>{selected.length} أسنان مختارة</span><span className="text-emerald-400">{cost} ر.س</span></div>
-              <div className="overflow-auto max-h-36">
+        <span className="text-[11px] md:text-sm font-bold mt-0.5 leading-none" style={{ color: sel ? '#10b981' : cmap[palmer] }}>{palmer}</span>
+        <span className="text-[8px] text-slate-500 leading-none mt-0.5">{fdi}</span>
+      </button>
+    );
+  };
+  const upperRight = [18,17,16,15,14,13,12,11];
+  const upperLeft = [21,22,23,24,25,26,27,28];
+  const lowerRight = [48,47,46,45,44,43,42,41];
+  const lowerLeft = [31,32,33,34,35,36,37,38];
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-1 md:p-4" onClick={onClose}>
+      <div className="bg-[#0a1028] border border-white/10 rounded-2xl w-full max-w-3xl max-h-[96vh] overflow-auto" onClick={e => e.stopPropagation()}>
+        <div className="p-2.5 md:p-3 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#0a1028] z-20">
+          <h3 className="text-white font-bold text-xs md:text-sm">مخطط الأسنان - اختر الأسنان</h3>
+          <button onClick={onClose} className="p-1.5 md:p-2 rounded-lg bg-white/10 text-white"><X size={16}/></button>
+        </div>
+        <div className="p-2 md:p-4">
+          <div className="text-center text-[10px] md:text-xs text-slate-400 mb-1.5">الفك العلوي</div>
+          <div className="grid grid-cols-8 gap-0.5 md:gap-1.5">{upperRight.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+          <div className="grid grid-cols-8 gap-0.5 md:gap-1.5 mt-0.5 md:mt-1">{upperLeft.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+          <div className="my-2 md:my-3 h-0.5 bg-red-500/70 rounded"></div>
+          <div className="text-center text-[10px] md:text-xs text-slate-400 mb-1.5">الفك السفلي</div>
+          <div className="grid grid-cols-8 gap-0.5 md:gap-1.5">{lowerRight.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+          <div className="grid grid-cols-8 gap-0.5 md:gap-1.5 mt-0.5 md:mt-1">{lowerLeft.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+          {selected.length > 0 && (
+            <div className="mt-4 rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+              <div className="p-2 text-xs font-bold text-white flex justify-between">
+                <span>{selected.length} أسنان مختارة</span>
+                <span className="text-emerald-400">{cost} ر.س</span>
+              </div>
+              <div className="overflow-auto max-h-32">
                 <table className="w-full text-xs">
                   <thead className="bg-white/5 text-slate-400 sticky top-0">
                     <tr><th className="p-2 text-right">المعالجة</th><th className="p-2 text-right">الطبيب</th><th className="p-2 text-right">السعر</th><th className="p-2 text-right">السن</th></tr>
                   </thead>
                   <tbody>
-                    {selected.map(num=><tr key={num} className="border-t border-white/5"><td className="p-2 text-white">{treatName||'-'}</td><td className="p-2 text-slate-300">{doctorName||'-'}</td><td className="p-2 text-emerald-400">{cost} ر.س</td><td className="p-2 text-emerald-300 font-bold">{num}</td></tr>)}
+                    {selected.map(num => (
+                      <tr key={num} className="border-t border-white/5">
+                        <td className="p-2 text-white">{treatName || '-'}</td>
+                        <td className="p-2 text-slate-300">{doctorName || '-'}</td>
+                        <td className="p-2 text-emerald-400">{cost} ر.س</td>
+                        <td className="p-2 text-emerald-300 font-bold">{num}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
         </div>
-        <div className="p-3 border-t border-white/10 flex justify-between items-center sticky bottom-0 bg-[#0a1028] z-20">
-          <span className="text-[11px] text-slate-400">{selected.length} أسنان</span>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 rounded-xl bg-white/10 text-white text-sm">إغلاق</button>
-            <button onClick={onClose} className="px-6 py-2.5 rounded-xl bg-gradient-to-l from-violet-600 to-blue-600 text-white text-sm font-bold">تم - {selected.length}</button>
-          </div>
+        <div className="p-2.5 md:p-3 border-t border-white/10 flex justify-between items-center sticky bottom-0 bg-[#0a1028] z-20 gap-2">
+          <span className="text-[10px] md:text-[11px] text-slate-400">
+            {selected.length > 0 ? `${selected.length} أسنان مختارة` : 'لم تختر أسنان بعد'}
+          </span>
+          <button onClick={onClose} className="px-4 md:px-6 py-2 rounded-xl bg-gradient-to-l from-violet-600 to-blue-600 text-white text-xs md:text-sm font-bold">
+            تم - إغلاق
+          </button>
         </div>
       </div>
     </div>
@@ -369,7 +426,7 @@ function TreatmentsBulk(){
 
     const { error } = await supabase.from('treatments').insert(payload);
     if(error){ alert('خطأ في الحفظ: ' + error.message); return; }
-    alert(`تم حفظ ${payload.length} معالجة بنجاح`);
+    alert(`تم حفظ ${payload.length} معالجة بنجاح - ستظهر في الملف الطبي وسند الحساب`);
     setBulkRows([]);
   }
 
@@ -429,7 +486,14 @@ function TreatmentsBulk(){
         </div>
       </div>
 
-      {jawOpen && <JawModalBulk selected={form.teeth} onToggle={(n)=>{ const has=form.teeth.includes(n); setForm({...form, teeth: has? form.teeth.filter((x:any)=>x!==n): [...form.teeth,n] }) }} onClose={()=>setJawOpen(false)} treatName={form.treatName} doctorName={form.doctorName} cost={form.cost} />}
+      {jawOpen && <JawModalBulk
+        selected={form.teeth}
+        onToggle={(n)=>{ const has=form.teeth.includes(n); setForm({...form, teeth: has? form.teeth.filter((x:any)=>x!==n): [...form.teeth,n] }) }}
+        onClose={()=>setJawOpen(false)}
+        treatName={form.treatName}
+        doctorName={form.doctorName}
+        cost={form.cost}
+      />}
     </div>
   );
 }
@@ -1242,4 +1306,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+                                                                                      }
