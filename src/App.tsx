@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import {
   LayoutDashboard, Users, Calendar, LogOut, Menu, Bell, X,
   Stethoscope, Syringe, Receipt, FileText, Settings as SettingsIcon,
+  ClipboardList, HeartPulse,
   Plus, Search, Mail, Lock, Loader2, ArrowRight, Save, Trash2, Edit3,
   MessageCircle, Clock, DollarSign
 } from 'lucide-react';
@@ -507,7 +508,99 @@ function Implants() {
   return <div className="space-y-4"><h2 className="text-xl font-bold text-white">سجل الزرعات - {list.length} زرعة</h2><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{list.map((im:any)=><div key={im.id} className={card}><div className="text-2xl font-bold text-emerald-400">{im.tooth_number}</div><div className="text-white text-sm">{im.patient?.full_name}</div><div className="text-xs text-slate-400">{im.brand} - {im.diameter_mm}x{im.length_mm}mm - {im.torque_ncm} Ncm</div></div>)}</div></div>;
 }
 
+
+function Treatments({ setPage, setSelectedPatient }: any) {
+  const [list, setList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true);
+      const { data, error } = await supabase.from('treatments').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100);
+      if(error){
+        console.log('treatments table not exists yet', error.message);
+        setList([]);
+      } else {
+        setList(data||[]);
+      }
+      setLoading(false);
+    })();
+  },[]);
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-white">سجل المعالجات</h2>
+        <button onClick={()=>setPage('treatment-new')} className={btnSm}><Plus size={16}/> إضافة معالجة</button>
+      </div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        {loading ? <div className="p-8 text-center text-slate-400">جاري التحميل...</div> :
+        list.length===0 ? <div className="p-12 text-center"><ClipboardList size={32} className="mx-auto text-slate-600 mb-3"/><p className="text-slate-400 text-sm">لا توجد معالجات بعد</p><p className="text-slate-500 text-xs mt-1">اضغط إضافة معالجة لإنشاء أول معالجة</p></div> :
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">السن</th><th className="text-right px-4 py-3">نوع المعالجة</th><th className="text-right px-4 py-3">التكلفة</th><th className="text-right px-4 py-3">الحالة</th></tr></thead>
+            <tbody className="divide-y divide-white/5">
+              {list.map((t:any)=><tr key={t.id} className="hover:bg-white/5">
+                <td className="px-4 py-3 text-slate-300 text-xs">{fmtDate(t.created_at)}</td>
+                <td className="px-4 py-3 text-white"><button onClick={()=>{ setSelectedPatient(t.patient); setPage('patient-detail'); }} className="text-blue-400 hover:underline">{t.patient?.full_name}</button></td>
+                <td className="px-4 py-3"><span className="px-2 py-1 rounded-full bg-white/10 text-white text-xs font-bold">{t.tooth_number || '—'}</span></td>
+                <td className="px-4 py-3 text-slate-200 text-xs">{t.treatment_type}</td>
+                <td className="px-4 py-3 text-emerald-300 text-xs">{t.cost ? `${t.cost} ر.س` : '—'}</td>
+                <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full ${t.status==='completed' ? 'bg-emerald-500/20 text-emerald-300' : t.status==='in_progress' ? 'bg-blue-500/20 text-blue-300' : 'bg-amber-500/20 text-amber-300'}`}>{t.status}</span></td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+function TreatmentForm({ onSave, onCancel }: any) {
+  const [patients, setPatients] = useState<any[]>([]);
+  const [form, setForm] = useState({ patient_id: '', tooth_number: '', treatment_type: 'حشوة تجميلية', description: '', cost: '', status: 'planned' });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+  useEffect(()=>{ supabase.from('patients').select('id, full_name').order('full_name').limit(100).then(({data})=>setPatients(data||[])); },[]);
+  async function submit(e:any){
+    e.preventDefault(); setErr('');
+    if(!form.patient_id){ setErr('اختر المريض'); return; }
+    setLoading(true);
+    const payload: any = {
+      patient_id: form.patient_id,
+      tooth_number: form.tooth_number ? Number(form.tooth_number) : null,
+      treatment_type: form.treatment_type,
+      description: form.description || null,
+      cost: form.cost ? Number(form.cost) : null,
+      status: form.status,
+    };
+    const { error } = await supabase.from('treatments').insert(payload);
+    setLoading(false);
+    if(error){ setErr(error.message + ' - تأكد من إنشاء جدول treatments في Supabase'); return; }
+    onSave();
+  }
+  return (
+    <form onSubmit={submit} className="space-y-4 max-w-2xl">
+      <div className="flex items-center gap-3"><button type="button" onClick={onCancel} className="text-slate-400"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">إضافة معالجة جديدة</h2></div>
+      <div className={card + ' space-y-4'}>
+        <div className="grid md:grid-cols-2 gap-4">
+          <label><span className={label}>المريض *</span><select className={inp} value={form.patient_id} onChange={e=>setForm({...form, patient_id: e.target.value})} required><option value="">اختر المريض</option>{patients.map((p:any)=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label>
+          <label><span className={label}>رقم السن (1-8 أو FDI)</span><input type="number" className={inp} placeholder="مثال: 11 أو 6" value={form.tooth_number} onChange={e=>setForm({...form, tooth_number: e.target.value})} /></label>
+          <label><span className={label}>نوع المعالجة *</span><select className={inp} value={form.treatment_type} onChange={e=>setForm({...form, treatment_type: e.target.value})}>
+            <option>حشوة تجميلية</option><option>حشوة عصب</option><option>قلع</option><option>تنظيف وتلميع</option><option>زراعة</option><option>تركيب زيركون</option><option>تركيب مؤقت</option><option>تقويم</option><option>تبييض</option><option>علاج لثة</option><option>أخرى</option>
+          </select></label>
+          <label><span className={label}>التكلفة (ر.س)</span><input type="number" className={inp} placeholder="500" value={form.cost} onChange={e=>setForm({...form, cost: e.target.value})} /></label>
+          <label><span className={label}>الحالة</span><select className={inp} value={form.status} onChange={e=>setForm({...form, status: e.target.value})}><option value="planned">مخطط لها</option><option value="in_progress">قيد التنفيذ</option><option value="completed">مكتملة</option></select></label>
+          <label className="md:col-span-2"><span className={label}>ملاحظات</span><textarea className={inp} rows={3} placeholder="تفاصيل المعالجة..." value={form.description} onChange={e=>setForm({...form, description: e.target.value})}></textarea></label>
+        </div>
+      </div>
+      {err && <div className="rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">{err}</div>}
+      <div className="flex gap-3"><button type="submit" disabled={loading} className={btnSm + ' !px-6'}>{loading ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>} حفظ المعالجة</button><button type="button" onClick={onCancel} className={btnGhost}>إلغاء</button></div>
+      <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-[11px] text-blue-300">⚠️ أول مرة: يجب إنشاء جدول treatments في Supabase - انسخ هذا الكود في SQL Editor:<br/><code className="text-[10px] text-slate-300 block mt-2 whitespace-pre-wrap">create table treatments (id uuid primary key default gen_random_uuid(), patient_id uuid references patients(id) on delete cascade, tooth_number int, treatment_type text not null, description text, cost numeric, status text default 'planned', created_at timestamp default now()); alter table treatments enable row level security; create policy "Allow all" on treatments for all using (true) with check (true);</code></div>
+    </form>
+  );
+}
+
 function Reports() {
+
   const [stats, setStats] = useState({ patients:0, surgeries:0, implants:0 });
   useEffect(()=>{ (async()=>{ const [p,s,i]=await Promise.all([ supabase.from('patients').select('*',{count:'exact', head:true}), supabase.from('surgeries').select('*',{count:'exact', head:true}), supabase.from('implants').select('*',{count:'exact', head:true}) ]); setStats({ patients: p.count||0, surgeries: s.count||0, implants: i.count||0 }); })(); },[]);
   return <div className="space-y-4"><h2 className="text-xl font-bold text-white">التقارير</h2><div className="grid grid-cols-2 gap-4"><div className={card}><div className="text-2xl font-bold text-white">{stats.patients}</div><div className="text-sm text-slate-400">اجمالي المرضى</div></div><div className={card}><div className="text-2xl font-bold text-purple-400">{stats.surgeries}</div><div className="text-sm text-slate-400">اجمالي الجراحات</div></div><div className={card}><div className="text-2xl font-bold text-emerald-400">{stats.implants}</div><div className="text-sm text-slate-400">اجمالي الزرعات</div></div></div></div>;
@@ -531,6 +624,7 @@ export default function App() {
   const menu = [
     { id:'dashboard', label:'لوحة التحكم', icon: LayoutDashboard },
     { id:'patients', label:'المرضى', icon: Users },
+    { id:'treatments', label:'إضافة معالجة', icon: ClipboardList },
     { id:'appointments', label:'المواعيد', icon: Calendar },
     { id:'surgeries', label:'الجراحات', icon: Stethoscope },
     { id:'implants', label:'الزرعات', icon: Syringe },
@@ -568,6 +662,8 @@ export default function App() {
           {page==='patient-detail' && selectedPatient && <PatientDetail patient={selectedPatient} onBack={()=>setPage('patients')} setPage={setPage} setEditItem={setEditItem} />}
           {page==='appointments' && <Appointments setPage={setPage} />}
           {page==='appointment-new' && <AppointmentForm onSave={()=>setPage('appointments')} onCancel={()=>setPage('appointments')} />}
+          {page==='treatments' && <Treatments setPage={setPage} setSelectedPatient={setSelectedPatient} />}
+          {page==='treatment-new' && <TreatmentForm onSave={()=>setPage('treatments')} onCancel={()=>setPage('treatments')} />}
           {page==='surgeries' && <Surgeries setPage={setPage} setSelectedPatient={setSelectedPatient} />}
           {page==='surgery-new' && <SurgeryForm onSave={()=>setPage('surgeries')} onCancel={()=>setPage('surgeries')} />}
           {page==='implants' && <Implants />}
