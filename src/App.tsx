@@ -237,106 +237,70 @@ function SearchSelect({ placeholder, options, value, onSelect, displayKey='name'
   );
 }
 
-// ====== TOOTH ART - realistic tooth shapes ======
-function ToothArt({ num, selected }: { num: number, selected: boolean }) {
-  const palmer = num % 10;
-  const fill = selected ? '#10b981' : '#f8f5ee';
-  const stroke = selected ? '#065f46' : '#1e3a5f';
-  const sw = 1.2;
-  const P = { fill, stroke, strokeWidth: sw, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
-  let art: any;
-  if (palmer === 1) {
-    art = <>
-      <path d="M 12 6 Q 25 3 38 6 L 38 28 Q 38 34 32 34 L 18 34 Q 12 34 12 28 Z" {...P} />
-      <path d="M 22 34 L 24 73 Q 25 76 26 73 L 28 34 Z" {...P} />
-    </>;
-  } else if (palmer === 2) {
-    art = <>
-      <path d="M 14 6 Q 25 4 36 6 L 36 28 Q 36 33 31 33 L 19 33 Q 14 33 14 28 Z" {...P} />
-      <path d="M 22 33 L 24 70 Q 25 73 26 70 L 28 33 Z" {...P} />
-    </>;
-  } else if (palmer === 3) {
-    art = <>
-      <path d="M 14 10 Q 20 0 25 0 Q 30 0 36 10 L 36 28 Q 36 34 30 34 L 20 34 Q 14 34 14 28 Z" {...P} />
-      <path d="M 22 34 L 24 74 Q 25 78 26 74 L 28 34 Z" {...P} />
-    </>;
-  } else if (palmer === 4) {
-    art = <>
-      <path d="M 10 18 Q 13 8 18 10 Q 20 6 25 6 Q 30 6 32 10 Q 37 8 40 18 L 40 30 Q 40 36 35 36 L 15 36 Q 10 36 10 30 Z" {...P} />
-      <path d="M 21 36 L 24 72 Q 25 76 26 72 L 29 36 Z" {...P} />
-    </>;
-  } else if (palmer === 5) {
-    art = <>
-      <path d="M 11 18 Q 14 9 19 11 Q 22 7 25 7 Q 28 7 31 11 Q 36 9 39 18 L 39 30 Q 39 35 34 35 L 16 35 Q 11 35 11 30 Z" {...P} />
-      <path d="M 21 35 L 24 68 Q 25 72 26 68 L 29 35 Z" {...P} />
-    </>;
-  } else if (palmer === 6) {
-    art = <>
-      <path d="M 6 22 Q 9 12 13 14 Q 16 10 20 13 Q 22 10 25 13 Q 28 10 30 13 Q 34 10 37 14 Q 41 12 44 22 L 44 32 Q 42 40 36 40 L 14 40 Q 8 40 6 32 Z" {...P} />
-      <path d="M 17 40 L 13 68 Q 13 74 18 74 Q 22 74 22 68 L 22 40 Z" {...P} />
-      <path d="M 33 40 L 37 68 Q 37 74 32 74 Q 28 74 28 68 L 28 40 Z" {...P} />
-    </>;
-  } else if (palmer === 7) {
-    art = <>
-      <path d="M 6 22 Q 9 13 13 15 Q 16 11 20 14 Q 22 11 25 14 Q 28 11 30 14 Q 34 11 37 15 Q 41 13 44 22 L 44 32 Q 42 40 36 40 L 14 40 Q 8 40 6 32 Z" {...P} />
-      <path d="M 17 40 L 13 65 Q 13 71 18 71 Q 22 71 22 65 L 22 40 Z" {...P} />
-      <path d="M 33 40 L 37 65 Q 37 71 32 71 Q 28 71 28 65 L 28 40 Z" {...P} />
-    </>;
-  } else {
-    art = <>
-      <path d="M 9 24 Q 12 15 15 17 Q 18 13 21 16 Q 24 13 27 16 Q 30 13 33 17 Q 36 15 40 24 L 40 32 Q 38 38 33 38 L 17 38 Q 12 38 10 32 Z" {...P} />
-      <path d="M 18 38 L 15 62 Q 15 67 19 67 Q 22 67 22 62 L 22 38 Z" {...P} />
-      <path d="M 30 38 L 33 62 Q 33 67 29 67 Q 26 67 26 62 L 26 38 Z" {...P} />
-    </>;
-  }
-  return <svg viewBox="0 0 50 80" className="w-full h-full">{art}</svg>;
-}
-
-// ====== JAW MODAL - compact, matches reference image, no clearing on close ======
+// ====== JAW MODAL - simple numbers 1-8 ======
 function JawModalBulk({ selected, onToggle, onClose, treatName, doctorName, cost }: { selected:number[], onToggle:(n:number)=>void, onClose:()=>void, treatName:string, doctorName:string, cost:number }) {
   const Cell = ({ fdi }: { fdi: number }) => {
     const palmer = fdi % 10;
     const sel = selected.includes(fdi);
     const cmap: any = { 1:'#ef4444', 2:'#f59e0b', 3:'#10b981', 4:'#3b82f6', 5:'#8b5cf6', 6:'#ec4899', 7:'#84cc16', 8:'#65a30d' };
     return (
-      <button onClick={() => onToggle(fdi)} className={`flex flex-col items-center transition-all ${sel ? 'scale-105' : ''}`}>
-        <div className={`w-full aspect-[5/8] p-0.5 rounded-lg ${sel ? 'bg-emerald-500/20 ring-2 ring-emerald-400' : 'hover:bg-white/5'}`}>
-          <ToothArt num={fdi} selected={sel} />
-        </div>
-        <span className="text-[11px] md:text-sm font-bold mt-0.5 leading-none" style={{ color: sel ? '#10b981' : cmap[palmer] }}>{palmer}</span>
-        <span className="text-[8px] text-slate-500 leading-none mt-0.5">{fdi}</span>
+      <button
+        onClick={() => onToggle(fdi)}
+        className={`relative rounded-lg border-2 aspect-square flex items-center justify-center transition-all ${sel ? 'bg-emerald-500 border-emerald-300 shadow-lg shadow-emerald-500/40 scale-105' : 'bg-white/5 border-white/15 hover:bg-white/10 hover:border-white/30'}`}
+      >
+        <span className="text-lg md:text-2xl font-black leading-none" style={{ color: sel ? 'white' : cmap[palmer] }}>{palmer}</span>
+        <span className={`absolute top-0.5 right-1 text-[7px] md:text-[8px] leading-none ${sel ? 'text-white/80' : 'text-slate-500'}`}>{fdi}</span>
+        {sel && <span className="absolute -top-1 -left-1 w-3 h-3 md:w-4 md:h-4 rounded-full bg-white text-emerald-600 flex items-center justify-center text-[8px] md:text-[10px] font-bold">✓</span>}
       </button>
     );
   };
   const upperRight = [18,17,16,15,14,13,12,11];
-  const upperLeft = [21,22,23,24,25,26,27,28];
+  const upperLeft  = [21,22,23,24,25,26,27,28];
   const lowerRight = [48,47,46,45,44,43,42,41];
-  const lowerLeft = [31,32,33,34,35,36,37,38];
+  const lowerLeft  = [31,32,33,34,35,36,37,38];
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-1 md:p-4" onClick={onClose}>
-      <div className="bg-[#0a1028] border border-white/10 rounded-2xl w-full max-w-3xl max-h-[96vh] overflow-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-2.5 md:p-3 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#0a1028] z-20">
-          <h3 className="text-white font-bold text-xs md:text-sm">مخطط الأسنان - اختر الأسنان</h3>
-          <button onClick={onClose} className="p-1.5 md:p-2 rounded-lg bg-white/10 text-white"><X size={16}/></button>
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 md:p-4" onClick={onClose}>
+      <div className="bg-[#0a1028] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[95vh] overflow-auto" onClick={e => e.stopPropagation()}>
+        <div className="p-3 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#0a1028] z-20 rounded-t-2xl">
+          <h3 className="text-white font-bold text-sm">اختر الأسنان - أرقام 1-8</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20"><X size={16}/></button>
         </div>
-        <div className="p-2 md:p-4">
-          <div className="text-center text-[10px] md:text-xs text-slate-400 mb-1.5">الفك العلوي</div>
-          <div className="grid grid-cols-8 gap-0.5 md:gap-1.5">{upperRight.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
-          <div className="grid grid-cols-8 gap-0.5 md:gap-1.5 mt-0.5 md:mt-1">{upperLeft.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
-          <div className="my-2 md:my-3 h-0.5 bg-red-500/70 rounded"></div>
-          <div className="text-center text-[10px] md:text-xs text-slate-400 mb-1.5">الفك السفلي</div>
-          <div className="grid grid-cols-8 gap-0.5 md:gap-1.5">{lowerRight.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
-          <div className="grid grid-cols-8 gap-0.5 md:gap-1.5 mt-0.5 md:mt-1">{lowerLeft.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+
+        <div className="p-3 md:p-5 space-y-3">
+          {/* الفك العلوي */}
+          <div>
+            <div className="text-center text-[11px] text-slate-400 mb-2 font-medium">الفك العلوي</div>
+            <div className="flex items-center justify-center gap-1 md:gap-1.5">
+              <div className="grid grid-cols-8 gap-1 md:gap-1.5 flex-1">{upperRight.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+              <div className="w-[2px] h-10 bg-red-500 mx-0.5 rounded"></div>
+              <div className="grid grid-cols-8 gap-1 md:gap-1.5 flex-1">{upperLeft.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+            </div>
+          </div>
+
+          {/* الخط الأحمر الأفقي */}
+          <div className="h-[2px] bg-red-500 w-full rounded"></div>
+
+          {/* الفك السفلي */}
+          <div>
+            <div className="text-center text-[11px] text-slate-400 mb-2 font-medium">الفك السفلي</div>
+            <div className="flex items-center justify-center gap-1 md:gap-1.5">
+              <div className="grid grid-cols-8 gap-1 md:gap-1.5 flex-1">{lowerRight.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+              <div className="w-[2px] h-10 bg-red-500 mx-0.5 rounded"></div>
+              <div className="grid grid-cols-8 gap-1 md:gap-1.5 flex-1">{lowerLeft.map(fdi => <Cell key={fdi} fdi={fdi} />)}</div>
+            </div>
+          </div>
+
+          {/* الجدول */}
           {selected.length > 0 && (
-            <div className="mt-4 rounded-xl bg-white/5 border border-white/10 overflow-hidden">
-              <div className="p-2 text-xs font-bold text-white flex justify-between">
-                <span>{selected.length} أسنان مختارة</span>
+            <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden mt-4">
+              <div className="p-2.5 text-xs font-bold text-white flex justify-between border-b border-white/10">
+                <span>🦷 {selected.length} أسنان مختارة</span>
                 <span className="text-emerald-400">{cost} ر.س</span>
               </div>
               <div className="overflow-auto max-h-32">
                 <table className="w-full text-xs">
-                  <thead className="bg-white/5 text-slate-400 sticky top-0">
-                    <tr><th className="p-2 text-right">المعالجة</th><th className="p-2 text-right">الطبيب</th><th className="p-2 text-right">السعر</th><th className="p-2 text-right">السن</th></tr>
+                  <thead className="bg-white/5 text-slate-400">
+                    <tr><th className="p-2 text-right">المعالجة</th><th className="p-2 text-right">الطبيب</th><th className="p-2 text-right">السعر</th><th className="p-2 text-right">رقم السن</th></tr>
                   </thead>
                   <tbody>
                     {selected.map(num => (
@@ -353,13 +317,10 @@ function JawModalBulk({ selected, onToggle, onClose, treatName, doctorName, cost
             </div>
           )}
         </div>
-        <div className="p-2.5 md:p-3 border-t border-white/10 flex justify-between items-center sticky bottom-0 bg-[#0a1028] z-20 gap-2">
-          <span className="text-[10px] md:text-[11px] text-slate-400">
-            {selected.length > 0 ? `${selected.length} أسنان مختارة` : 'لم تختر أسنان بعد'}
-          </span>
-          <button onClick={onClose} className="px-4 md:px-6 py-2 rounded-xl bg-gradient-to-l from-violet-600 to-blue-600 text-white text-xs md:text-sm font-bold">
-            تم - إغلاق
-          </button>
+
+        <div className="p-3 border-t border-white/10 flex justify-between items-center sticky bottom-0 bg-[#0a1028] gap-2 rounded-b-2xl">
+          <span className="text-[11px] text-slate-400">{selected.length > 0 ? `${selected.length} أسنان` : 'لم تختر بعد'}</span>
+          <button onClick={onClose} className="px-6 py-2 rounded-xl bg-gradient-to-l from-violet-600 to-blue-600 text-white text-sm font-bold">تم - إغلاق</button>
         </div>
       </div>
     </div>
@@ -806,504 +767,4 @@ function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
       </div>
       <div className="border-b border-white/10 overflow-x-auto">
         <div className="flex gap-1 min-w-max">
-          {[{id:'overview', label:'نظرة عامة'},{id:'chart', label:`مخطط الاسنان (${implants.length})`},{id:'treatments', label:`سجل المعالجات (${treatments.length})`},{id:'surgeries', label:`الجراحات (${surgeries.length})`},{id:'followups', label:`المتابعات (${followups.length})`}].map(t=><button key={t.id} onClick={() => setTab(t.id)} className={'px-4 py-2.5 text-sm border-b-2 whitespace-nowrap ' + (tab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-slate-400')}>{t.label}</button>)}
-        </div>
-      </div>
-      {tab==='overview' && <div className={card}><div className="grid grid-cols-3 gap-3 text-center">
-        <div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-white">{surgeries.length}</div><div className="text-xs text-slate-400">جراحات</div></div>
-        <div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-emerald-400">{implants.length}</div><div className="text-xs text-slate-400">زرعات</div></div>
-        <div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-amber-400">{followups.length}</div><div className="text-xs text-slate-400">متابعات</div></div>
-      </div></div>}
-      {tab==='chart' && <div className="space-y-4">
-        <ToothChart implants={implants} onToothClick={handleToothClick}/>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{implants.map((im:any)=><div key={im.id} className={card}><div className="flex justify-between"><span className="text-2xl font-bold text-emerald-400">{im.tooth_number}</span><span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300">{im.status}</span></div><div className="text-sm text-white mt-1">{im.brand}</div><div className="text-xs text-slate-400 mt-1" dir="ltr">{im.diameter_mm} x {im.length_mm} mm | Torque {im.torque_ncm} Ncm</div></div>)}</div>
-      </div>}
-      {tab==='treatments' && <div className={card + ' !p-0 overflow-hidden'}>
-        <div className="p-4 font-bold text-white">سجل المعالجات - {treatments.length} سجل</div>
-        <div className="overflow-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-white/5 text-slate-400 text-xs">
-              <tr><th className="text-right px-4 py-3">المعالجة</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">السعر</th><th className="text-right px-4 py-3">السن</th><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">الحالة</th></tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {treatments.length===0 ? <tr><td colSpan={6} className="p-6 text-center text-slate-500">لا توجد معالجات</td></tr> :
-                treatments.map((tr:any)=><tr key={tr.id} className="hover:bg-white/5">
-                  <td className="px-4 py-2 text-white">{tr.treatment_type}</td>
-                  <td className="px-4 py-2 text-slate-300">{tr.doctor_name||'—'}</td>
-                  <td className="px-4 py-2 text-emerald-400">{tr.cost} ر.س</td>
-                  <td className="px-4 py-2 text-emerald-300">🦷 {tr.tooth_number}</td>
-                  <td className="px-4 py-2 text-slate-500 text-xs">{fmtDate(tr.treatment_date || tr.created_at)}</td>
-                  <td className="px-4 py-2"><span className={`text-xs px-2 py-1 rounded ${tr.status==='completed' ? 'bg-emerald-500/20 text-emerald-300' : tr.status==='in_progress' ? 'bg-blue-500/20 text-blue-300' : 'bg-amber-500/20 text-amber-300'}`}>{tr.status}</span></td>
-                </tr>)}
-            </tbody>
-          </table>
-        </div>
-      </div>}
-      {tab==='surgeries' && <div className="space-y-3">{surgeries.map((s:any)=><div key={s.id} className={card + ' flex justify-between items-center'}><div><div className="text-white font-medium">{s.surgery_type} - {fmtDate(s.scheduled_date)}</div><div className="text-xs text-slate-400">{s.status}</div></div></div>)}</div>}
-      {tab==='followups' && <div className="space-y-3">
-        <button onClick={async()=>{
-          if (surgeries.length===0) { alert('انشئ جراحة اولا'); return; }
-          const base = new Date(surgeries[0].scheduled_date || new Date());
-          const dates = [{type:'فك غرز', days:7},{type:'متابعة التئام', days:14},{type:'كشف اندماج العظم', days:90},{type:'موعد التركيب', days:180}];
-          for (const d of dates) { const dt = new Date(base); dt.setDate(dt.getDate()+d.days); await supabase.from('follow_ups').insert({ patient_id: patient.id, surgery_id: surgeries[0].id, follow_type: d.type, scheduled_date: dt.toISOString().slice(0,10), status:'scheduled' }); }
-          load();
-        }} className={btnSm}><Plus size={16}/> انشاء متابعات تلقائية</button>
-        {followups.map((f:any)=><div key={f.id} className={card + ' flex justify-between items-center'}><div><div className="text-white">{f.follow_type}</div><div className="text-xs text-slate-400">{fmtDate(f.scheduled_date)}</div></div><span className={`text-xs px-2 py-1 rounded ${f.status==='completed' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{f.status}</span></div>)}
-      </div>}
-      {showImplantModal && <ImplantModal surgeryId={surgeries[0]?.id} patientId={patient.id} initialTooth={selectedTooth} onClose={()=>setShowImplantModal(false)} onSave={()=>{ setShowImplantModal(false); load(); }} />}
-    </div>
-  );
-}
-
-// ====== SURGERIES ======
-function Surgeries({ setPage, setSelectedPatient }: any) {
-  const [list, setList] = useState<any[]>([]);
-  useEffect(()=>{ (async()=>{ const {data}=await supabase.from('surgeries').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between"><h2 className="text-xl font-bold text-white">الجراحات</h2><button onClick={()=>setPage('surgery-new')} className={btnSm}><Plus size={16}/> جراحة جديدة</button></div>
-      <div className={card + ' !p-0 overflow-hidden'}>
-        <table className="w-full text-sm">
-          <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">النوع</th></tr></thead>
-          <tbody className="divide-y divide-white/5">
-            {list.map((s:any)=><tr key={s.id} className="hover:bg-white/5">
-              <td className="px-4 py-3 text-slate-300 text-xs">{fmtDate(s.scheduled_date)}</td>
-              <td className="px-4 py-3 text-white"><button onClick={()=>{ setSelectedPatient(s.patient); setPage('patient-detail'); }} className="text-blue-400">{s.patient?.full_name}</button></td>
-              <td className="px-4 py-3 text-slate-300 text-xs">{s.surgery_type}</td>
-            </tr>)}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ====== APPOINTMENTS ======
-function Appointments({ setPage }: any) {
-  const [list, setList] = useState<any[]>([]);
-  useEffect(()=>{ (async()=>{ const {data}=await supabase.from('appointments').select('*, patient:patients(full_name)').order('scheduled_start',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between"><h2 className="text-xl font-bold text-white">المواعيد</h2><button onClick={()=>setPage('appointment-new')} className={btnSm}><Plus size={16}/> موعد جديد</button></div>
-      <div className={card + ' !p-0 overflow-hidden'}>
-        <table className="w-full text-sm">
-          <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">النوع</th></tr></thead>
-          <tbody className="divide-y divide-white/5">
-            {list.map((a:any)=><tr key={a.id} className="hover:bg-white/5">
-              <td className="px-4 py-3 text-slate-300 text-xs">{fmtDateTime(a.scheduled_start)}</td>
-              <td className="px-4 py-3 text-white">{a.patient?.full_name}</td>
-              <td className="px-4 py-3 text-slate-300 text-xs">{a.appointment_type}</td>
-            </tr>)}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ====== APPOINTMENT FORM ======
-function AppointmentForm({ onSave, onCancel }: any) {
-  const [patients, setPatients] = useState<any[]>([]);
-  const [patientId, setPatientId] = useState('');
-  const [type, setType] = useState('consultation');
-  const [date, setDate] = useState(new Date().toISOString().slice(0,10));
-  const [time, setTime] = useState('10:00');
-  useEffect(()=>{ supabase.from('patients').select('id, full_name').limit(50).then(({data})=>setPatients(data||[])); },[]);
-  async function submit(e:any){
-    e.preventDefault(); const start=new Date(`${date}T${time}`);
-    const {data:u}=await supabase.auth.getUser();
-    await supabase.from('appointments').insert({ patient_id: patientId, doctor_id: u?.user?.id, appointment_type: type, status:'scheduled', scheduled_start: start.toISOString(), duration_minutes:30 });
-    onSave();
-  }
-  return (
-    <form onSubmit={submit} className="space-y-4 max-w-xl">
-      <h2 className="text-xl font-bold text-white">حجز موعد جديد</h2>
-      <div className={card + ' space-y-4'}>
-        <label><span className={label}>المريض *</span><select className={inp} value={patientId} onChange={e=>setPatientId(e.target.value)} required><option value="">اختر مريض</option>{patients.map((p:any)=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label>
-        <label><span className={label}>النوع</span><select className={inp} value={type} onChange={e=>setType(e.target.value)}><option value="consultation">استشارة</option><option value="implant_surgery">جراحة زراعة</option><option value="follow_up">متابعة</option></select></label>
-        <div className="grid grid-cols-2 gap-4">
-          <label><span className={label}>التاريخ</span><input type="date" value={date} onChange={e=>setDate(e.target.value)} className={inp}/></label>
-          <label><span className={label}>الوقت</span><input type="time" value={time} onChange={e=>setTime(e.target.value)} className={inp}/></label>
-        </div>
-      </div>
-      <div className="flex gap-2"><button type="submit" className={btnSm}>حفظ الموعد</button><button type="button" onClick={onCancel} className={btnGhost}>الغاء</button></div>
-    </form>
-  );
-}
-
-// ====== SURGERY FORM ======
-function SurgeryForm({ onSave, onCancel }: any) {
-  const [patients, setPatients] = useState<any[]>([]);
-  const [patientId, setPatientId] = useState('');
-  const [type, setType] = useState('single_implant');
-  const [date, setDate] = useState(new Date().toISOString().slice(0,10));
-  useEffect(()=>{ supabase.from('patients').select('id, full_name').limit(50).then(({data})=>setPatients(data||[])); },[]);
-  async function submit(e:any){
-    e.preventDefault(); const {data:u}=await supabase.auth.getUser();
-    const {error}=await supabase.from('surgeries').insert({ patient_id: patientId, doctor_id: u?.user?.id, surgery_type: type, status:'planned', scheduled_date: new Date(date).toISOString() });
-    if(error){ alert(error.message); return; }
-    onSave();
-  }
-  return (
-    <form onSubmit={submit} className="space-y-4 max-w-xl">
-      <h2 className="text-xl font-bold text-white">جراحة جديدة</h2>
-      <div className={card + ' space-y-4'}>
-        <label><span className={label}>المريض *</span><select className={inp} value={patientId} onChange={e=>setPatientId(e.target.value)} required><option value="">اختر مريض</option>{patients.map((p:any)=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label>
-        <label><span className={label}>نوع الجراحة</span><select className={inp} value={type} onChange={e=>setType(e.target.value)}><option value="single_implant">زرعة واحدة</option><option value="multiple_implants">زرعات متعددة</option><option value="full_arch">قوس كامل</option></select></label>
-        <label><span className={label}>التاريخ</span><input type="date" value={date} onChange={e=>setDate(e.target.value)} className={inp}/></label>
-      </div>
-      <div className="flex gap-2"><button type="submit" className={btnSm}>انشاء الجراحة</button><button type="button" onClick={onCancel} className={btnGhost}>الغاء</button></div>
-    </form>
-  );
-}
-
-// ====== IMPLANT MODAL ======
-function ImplantModal({ surgeryId, patientId, initialTooth, onClose, onSave }: any) {
-  const [form, setForm] = useState({ tooth_number: initialTooth||11, brand: 'Straumann', diameter_mm: '4.1', length_mm: '10', torque_ncm: '35', bone_density: 'D2' });
-  const [loading, setLoading] = useState(false);
-  async function submit(e:any){
-    e.preventDefault(); setLoading(true);
-    const { error } = await supabase.from('implants').insert({
-      patient_id: patientId, surgery_id: surgeryId,
-      tooth_number: form.tooth_number, status:'placed', brand: form.brand,
-      diameter_mm: Number(form.diameter_mm), length_mm: Number(form.length_mm), torque_ncm: Number(form.torque_ncm),
-      bone_density: form.bone_density, placed_at: new Date().toISOString(),
-    });
-    setLoading(false);
-    if(error){ alert(error.message); return; }
-    onSave();
-  }
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1733]">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-          <h3 className="text-white font-semibold">اضافة زرعة سن {form.tooth_number}</h3>
-          <button onClick={onClose} className="text-slate-400"><X size={18}/></button>
-        </div>
-        <form onSubmit={submit} className="p-5 grid grid-cols-2 gap-4">
-          <label><span className={label}>السن</span><input type="number" className={inp} value={form.tooth_number} onChange={e=>setForm({...form, tooth_number: Number(e.target.value)})}/></label>
-          <label><span className={label}>الماركة</span><select className={inp} value={form.brand} onChange={e=>setForm({...form, brand: e.target.value})}><option>Straumann</option><option>Nobel Biocare</option><option>Mega Gen</option><option>Osstem</option></select></label>
-          <label><span className={label}>القطر</span><input className={inp} value={form.diameter_mm} onChange={e=>setForm({...form, diameter_mm: e.target.value})}/></label>
-          <label><span className={label}>الطول</span><input className={inp} value={form.length_mm} onChange={e=>setForm({...form, length_mm: e.target.value})}/></label>
-          <label><span className={label}>العزم Ncm</span><input className={inp + ' border-amber-500/40'} value={form.torque_ncm} onChange={e=>setForm({...form, torque_ncm: e.target.value})}/></label>
-          <label><span className={label}>كثافة العظم</span><select className={inp} value={form.bone_density} onChange={e=>setForm({...form, bone_density: e.target.value})}><option>D1</option><option>D2</option><option>D3</option><option>D4</option></select></label>
-          <div className="col-span-2 flex justify-end gap-2 pt-2 border-t border-white/10">
-            <button type="button" onClick={onClose} className={btnGhost}>الغاء</button>
-            <button type="submit" disabled={loading} className={btnSm}>{loading && <Loader2 className="animate-spin" size={14}/>} حفظ الزرعة</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ====== IMPLANTS LIST ======
-function Implants() {
-  const [list, setList] = useState<any[]>([]);
-  useEffect(()=>{ supabase.from('implants').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100).then(({data})=>setList(data||[])); },[]);
-  return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-white">سجل الزرعات - {list.length} زرعة</h2>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {list.map((im:any)=><div key={im.id} className={card}>
-          <div className="text-2xl font-bold text-emerald-400">{im.tooth_number}</div>
-          <div className="text-white text-sm">{im.patient?.full_name}</div>
-          <div className="text-xs text-slate-400">{im.brand} - {im.diameter_mm}x{im.length_mm}mm - {im.torque_ncm} Ncm</div>
-        </div>)}
-      </div>
-    </div>
-  );
-}
-
-// ====== REPORTS ======
-function Reports() {
-  const [stats, setStats] = useState({ patients:0, surgeries:0, implants:0, treatments:0 });
-  useEffect(()=>{ (async()=>{
-    const [p,s,i,t]=await Promise.all([
-      supabase.from('patients').select('*',{count:'exact', head:true}),
-      supabase.from('surgeries').select('*',{count:'exact', head:true}),
-      supabase.from('implants').select('*',{count:'exact', head:true}),
-      supabase.from('treatments').select('*',{count:'exact', head:true}),
-    ]);
-    setStats({ patients: p.count||0, surgeries: s.count||0, implants: i.count||0, treatments: t.count||0 });
-  })(); },[]);
-  return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-white">التقارير</h2>
-      <div className="grid grid-cols-2 gap-4">
-        <div className={card}><div className="text-2xl font-bold text-white">{stats.patients}</div><div className="text-sm text-slate-400">اجمالي المرضى</div></div>
-        <div className={card}><div className="text-2xl font-bold text-purple-400">{stats.surgeries}</div><div className="text-sm text-slate-400">اجمالي الجراحات</div></div>
-        <div className={card}><div className="text-2xl font-bold text-emerald-400">{stats.implants}</div><div className="text-sm text-slate-400">اجمالي الزرعات</div></div>
-        <div className={card}><div className="text-2xl font-bold text-blue-400">{stats.treatments}</div><div className="text-sm text-slate-400">اجمالي المعالجات</div></div>
-      </div>
-    </div>
-  );
-}
-
-// ====== SETTINGS PAGE ======
-function SettingsPage(){
-  const [settingsTab, setSettingsTab] = useState<'doctors'|'treatments'|'users'>('doctors');
-  const [doctors, setDoctors] = useState<any[]>([]);
-  const [treatTypes, setTreatTypes] = useState<any[]>([]);
-  const [appUsers, setAppUsers] = useState<any[]>([]);
-  const [newDoc, setNewDoc] = useState({name:'', specialty:''});
-  const [newTreat, setNewTreat] = useState({name:'', price:500});
-  const [newUser, setNewUser] = useState({username:'', password:'', role:'طبيب'});
-  const [userSearch, setUserSearch] = useState('');
-  const [editItem, setEditItem] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async()=>{
-    setLoading(true);
-    const [d,t,u] = await Promise.all([
-      supabase.from('doctors').select('*').order('created_at',{ascending:false}),
-      supabase.from('treatment_definitions').select('*').order('created_at',{ascending:false}),
-      supabase.from('app_users').select('id, username, role, is_active, created_at').order('created_at',{ascending:false}),
-    ]);
-    setDoctors(d.data||[]);
-    setTreatTypes(t.data||[]);
-    setAppUsers(u.data||[]);
-    setLoading(false);
-  },[]);
-  useEffect(()=>{ load(); },[load]);
-
-  async function addDoctor(){
-    if(!newDoc.name) return;
-    const { error } = await supabase.from('doctors').insert({name:newDoc.name, specialty:newDoc.specialty||null});
-    if(error){ alert(error.message); return; }
-    setNewDoc({name:'', specialty:''}); load();
-  }
-  async function addTreatment(){
-    if(!newTreat.name || !newTreat.price) return alert('الاسم والسعر مطلوب');
-    const { error } = await supabase.from('treatment_definitions').insert({name:newTreat.name, price:Number(newTreat.price)});
-    if(error){ alert(error.message); return; }
-    setNewTreat({name:'', price:500}); load();
-  }
-  async function addUser(){
-    if(!newUser.username || !newUser.password) return alert('اسم المستخدم وكلمة المرور مطلوبان');
-    const hash = await hashPassword(newUser.password);
-    const { error } = await supabase.from('app_users').insert({username:newUser.username.trim(), password_hash: hash, role: newUser.role});
-    if(error){ alert(error.message); return; }
-    setNewUser({username:'', password:'', role:'طبيب'}); load();
-  }
-  async function deleteDoctor(id:string){ if(!confirm('حذف الطبيب؟')) return; await supabase.from('doctors').delete().eq('id', id); load(); }
-  async function deleteTreat(id:string){ if(!confirm('حذف المعالجة؟')) return; await supabase.from('treatment_definitions').delete().eq('id', id); load(); }
-  async function deleteUser(id:string){ if(!confirm('حذف المستخدم؟')) return; await supabase.from('app_users').delete().eq('id', id); load(); }
-  async function saveEdit(){
-    if(!editItem) return;
-    if(editItem.type==='doc'){ await supabase.from('doctors').update({name:editItem.data.name, specialty:editItem.data.specialty}).eq('id', editItem.data.id); }
-    else if(editItem.type==='treat'){ await supabase.from('treatment_definitions').update({name:editItem.data.name, price:Number(editItem.data.price)}).eq('id', editItem.data.id); }
-    else if(editItem.type==='user'){
-      const payload:any = { username: editItem.data.username, role: editItem.data.role };
-      if(editItem.data.newPassword){ payload.password_hash = await hashPassword(editItem.data.newPassword); }
-      await supabase.from('app_users').update(payload).eq('id', editItem.data.id);
-    }
-    setEditItem(null); load();
-  }
-
-  return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-white">الاعدادات - Zircon OS V2</h2>
-      <div className={card + ' !p-4'}>
-        <p className="text-slate-400 text-sm">البريد: mustafa781075016@gmail.com</p>
-        <p className="text-slate-500 text-xs mt-1">Zircon OS V2 - عيادة زراعة الاسنان</p>
-      </div>
-      <div className={card + ' !p-4'}>
-        <div className="flex gap-2 border-b border-white/10 overflow-auto">
-          <button onClick={()=>setSettingsTab('doctors')} className={`px-4 py-2 text-sm border-b-2 whitespace-nowrap ${settingsTab==='doctors'?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>إدارة الأطباء (طبيب)</button>
-          <button onClick={()=>setSettingsTab('treatments')} className={`px-4 py-2 text-sm border-b-2 whitespace-nowrap ${settingsTab==='treatments'?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>إدارة المعالجات (معالجة)</button>
-        </div>
-        <div className="mt-3 flex">
-          <button onClick={()=>setSettingsTab('users')} className={`w-full md:w-auto px-6 py-2.5 rounded-xl text-sm font-bold border flex items-center justify-center gap-2 ${settingsTab==='users'?'bg-gradient-to-l from-violet-600 to-blue-600 border-violet-500 text-white':'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}`}>
-            <UserPlus size={16}/> إضافة مستخدم - اسم المستخدم وكلمة المرور وعرض المستخدمين
-          </button>
-        </div>
-
-        {settingsTab==='doctors' && (
-          <div className="mt-5 space-y-4">
-            <div className="grid md:grid-cols-3 gap-3">
-              <div><label className={label}>اسم الطبيب</label><input value={newDoc.name} onChange={e=>setNewDoc({...newDoc,name:e.target.value})} placeholder="د. أحمد" className={inp}/></div>
-              <div><label className={label}>التخصص</label><input value={newDoc.specialty} onChange={e=>setNewDoc({...newDoc,specialty:e.target.value})} placeholder="زراعة" className={inp}/></div>
-              <div className="flex items-end"><button onClick={addDoctor} className={btnSm}><Plus size={16}/> إضافة</button></div>
-            </div>
-            <div className="space-y-2">
-              {loading ? <div className="text-center text-slate-400 p-4">جاري التحميل...</div> :
-                doctors.map((d:any)=><div key={d.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5">
-                  <span className="text-white text-sm">{d.name} - {d.specialty||'—'}</span>
-                  <div className="flex gap-2">
-                    <button onClick={()=>setEditItem({type:'doc',data:{...d}})} className="text-blue-400"><Edit3 size={14}/></button>
-                    <button onClick={()=>deleteDoctor(d.id)} className="text-red-400"><Trash2 size={14}/></button>
-                  </div>
-                </div>)}
-            </div>
-          </div>
-        )}
-
-        {settingsTab==='treatments' && (
-          <div className="mt-5 space-y-4">
-            <div className="grid md:grid-cols-3 gap-3">
-              <div><label className={label}>اسم المعالجة</label><input value={newTreat.name} onChange={e=>setNewTreat({...newTreat,name:e.target.value})} placeholder="زراعة" className={inp}/></div>
-              <div><label className={label}>السعر</label><input type="number" value={newTreat.price} onChange={e=>setNewTreat({...newTreat,price:parseInt(e.target.value)||0})} className={inp}/></div>
-              <div className="flex items-end"><button onClick={addTreatment} className={btnSm}><Plus size={16}/> إضافة</button></div>
-            </div>
-            <div className="space-y-2">
-              {loading ? <div className="text-center text-slate-400 p-4">جاري التحميل...</div> :
-                treatTypes.map((t:any)=><div key={t.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5">
-                  <span className="text-white text-sm">{t.name} - {t.price} ر.س</span>
-                  <div className="flex gap-2">
-                    <button onClick={()=>setEditItem({type:'treat',data:{...t}})} className="text-blue-400"><Edit3 size={14}/></button>
-                    <button onClick={()=>deleteTreat(t.id)} className="text-red-400"><Trash2 size={14}/></button>
-                  </div>
-                </div>)}
-            </div>
-          </div>
-        )}
-
-        {settingsTab==='users' && (
-          <div className="mt-5 space-y-4">
-            <div className="rounded-2xl bg-white/[.02] border border-white/10 p-4 space-y-3">
-              <div className="font-semibold text-white flex items-center gap-2"><UserPlus size={18}/> إضافة مستخدم جديد</div>
-              <div className="grid md:grid-cols-3 gap-3">
-                <div><label className={label}>اسم المستخدم *</label><input value={newUser.username} onChange={e=>setNewUser({...newUser,username:e.target.value})} placeholder="مثال: doctor1" className={inp}/></div>
-                <div><label className={label}>كلمة المرور *</label><input value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} placeholder="••••••" type="password" className={inp}/></div>
-                <div><label className={label}>الدور</label><select value={newUser.role} onChange={e=>setNewUser({...newUser,role:e.target.value})} className={inp}><option>طبيب</option><option>مدير</option><option>استقبال</option><option>محاسب</option></select></div>
-              </div>
-              <button onClick={addUser} className={btnSm + ' w-full md:w-auto'}><Plus size={16}/> إضافة المستخدم</button>
-            </div>
-            <div className={card + ' !bg-white/[.02]'}>
-              <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
-                <div className="font-bold flex items-center gap-2 text-white"><Users size={18}/> عرض المستخدمين - {appUsers.filter((u:any)=> u.username.toLowerCase().includes(userSearch.toLowerCase())).length}</div>
-                <div className="relative"><Search size={14} className="absolute right-2 top-2.5 text-slate-500"/><input value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="بحث سريع..." className="pr-7 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-xs w-40 text-white"/></div>
-              </div>
-              <div className="overflow-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-slate-400 text-xs"><tr><th className="p-2 text-right">اسم المستخدم</th><th className="p-2 text-right">الدور</th><th className="p-2"></th></tr></thead>
-                  <tbody>
-                    {appUsers.filter((u:any)=> u.username.toLowerCase().includes(userSearch.toLowerCase())).map((u:any)=><tr key={u.id} className="border-t border-white/5 hover:bg-white/[0.02]">
-                      <td className="p-3 flex items-center gap-2 text-white"><div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-xs">{u.username[0]}</div>{u.username}</td>
-                      <td className="p-3"><span className="text-xs px-2 py-1 rounded bg-white/10 text-white">{u.role}</span></td>
-                      <td className="p-3 flex gap-1 justify-end">
-                        <button onClick={()=>setEditItem({type:'user',data:{...u, newPassword:''}})} className="p-1.5 rounded bg-white/5 text-white"><Edit3 size={12}/></button>
-                        <button onClick={()=>deleteUser(u.id)} className="p-1.5 rounded bg-red-500/20 text-red-300"><Trash2 size={12}/></button>
-                      </td>
-                    </tr>)}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {editItem && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={()=>setEditItem(null)}>
-            <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-4 w-full max-w-md" onClick={e=>e.stopPropagation()}>
-              <h3 className="font-bold mb-3 text-white">{editItem.type==='user'?'تعديل مستخدم': editItem.type==='doc'?'تعديل طبيب':'تعديل معالجة'}</h3>
-              {editItem.type==='doc' && <div className="space-y-2">
-                <input value={editItem.data.name} onChange={e=>setEditItem({...editItem,data:{...editItem.data,name:e.target.value}})} className={inp}/>
-                <input value={editItem.data.specialty||''} onChange={e=>setEditItem({...editItem,data:{...editItem.data,specialty:e.target.value}})} className={inp}/>
-                <div className="flex gap-2"><button onClick={saveEdit} className={btnSm}>حفظ</button><button onClick={()=>setEditItem(null)} className={btnGhost}>إلغاء</button></div>
-              </div>}
-              {editItem.type==='treat' && <div className="space-y-2">
-                <input value={editItem.data.name} onChange={e=>setEditItem({...editItem,data:{...editItem.data,name:e.target.value}})} className={inp}/>
-                <input type="number" value={editItem.data.price} onChange={e=>setEditItem({...editItem,data:{...editItem.data,price:parseInt(e.target.value)||0}})} className={inp}/>
-                <div className="flex gap-2"><button onClick={saveEdit} className={btnSm}>حفظ</button><button onClick={()=>setEditItem(null)} className={btnGhost}>إلغاء</button></div>
-              </div>}
-              {editItem.type==='user' && <div className="space-y-2">
-                <input value={editItem.data.username} onChange={e=>setEditItem({...editItem,data:{...editItem.data,username:e.target.value}})} placeholder="اسم المستخدم" className={inp}/>
-                <input value={editItem.data.newPassword||''} onChange={e=>setEditItem({...editItem,data:{...editItem.data,newPassword:e.target.value}})} placeholder="كلمة مرور جديدة (اتركها فارغة لعدم التغيير)" className={inp}/>
-                <select value={editItem.data.role} onChange={e=>setEditItem({...editItem,data:{...editItem.data,role:e.target.value}})} className={inp}><option>طبيب</option><option>مدير</option><option>استقبال</option><option>محاسب</option></select>
-                <div className="flex gap-2"><button onClick={saveEdit} className={btnSm}>حفظ</button><button onClick={()=>setEditItem(null)} className={btnGhost}>إلغاء</button></div>
-              </div>}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ====== APP MAIN ======
-export default function App() {
-  const [currentUser, setCurrentUser] = useState<any>(()=>{
-    try{ return JSON.parse(localStorage.getItem('zircon_currentUser')||'null') }catch{ return null }
-  });
-  const [page, setPage] = useState('dashboard');
-  const [editItem, setEditItem] = useState<any>(null);
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  if (!currentUser) return <Login onLogin={(u:any)=>setCurrentUser(u)} />;
-
-  const role = currentUser?.role || 'مدير';
-
-  const allMenu = [
-    { id:'dashboard', label:'لوحة التحكم', icon: LayoutDashboard, roles:['مدير','طبيب','استقبال','محاسب'] },
-    { id:'patients', label:'المرضى', icon: Users, roles:['مدير','طبيب','استقبال'] },
-    { id:'treatments-bulk', label:'اضافة معالجات', icon: FileSpreadsheet, roles:['مدير','طبيب'] },
-    { id:'appointments', label:'المواعيد', icon: Calendar, roles:['مدير','طبيب','استقبال'] },
-    { id:'surgeries', label:'الجراحات', icon: Stethoscope, roles:['مدير','طبيب'] },
-    { id:'implants', label:'الزرعات', icon: Syringe, roles:['مدير','طبيب'] },
-    { id:'disease-log', label:'سجل الأمراض', icon: ClipboardList, roles:['مدير','طبيب','استقبال','محاسب'] },
-    { id:'reports', label:'التقارير', icon: FileText, roles:['مدير','محاسب'] },
-    { id:'settings', label:'الاعدادات', icon: SettingsIcon, roles:['مدير'] },
-  ];
-  const menu = allMenu.filter(m=> m.roles.includes(role));
-
-  return (
-    <div dir="rtl" className="min-h-screen bg-[#060a1a] text-white flex">
-      {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={()=>setSidebarOpen(false)} />}
-      <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-64 border-l border-white/10 bg-[#0a1028] p-4 flex flex-col transition-transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 grid place-items-center font-bold">Z</div>
-            <div><div className="font-bold">Zircon</div><div className="text-[10px] text-slate-400">Dental OS V2</div></div>
-          </div>
-          <button onClick={()=>setSidebarOpen(false)} className="lg:hidden text-slate-400"><X size={18}/></button>
-        </div>
-        <nav className="space-y-1 flex-1 overflow-y-auto">
-          {menu.map(m=>(
-            <button key={m.id} onClick={()=>{ setPage(m.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 text-right p-3 rounded-xl text-sm transition ${page===m.id ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'hover:bg-white/5 text-slate-300'}`}>
-              <m.icon size={18}/> {m.label}
-            </button>
-          ))}
-        </nav>
-        <div className="mt-auto space-y-2">
-          <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 grid place-items-center text-xs font-bold">{currentUser?.username?.[0]?.toUpperCase()||'م'}</div>
-              <div><div className="text-sm font-bold text-white">{currentUser?.username}</div><div className="text-[11px] text-slate-400">{role}</div></div>
-            </div>
-          </div>
-          <button onClick={() => { localStorage.removeItem('zircon_currentUser'); setCurrentUser(null); }} className="w-full flex items-center gap-2 text-red-400 p-3 text-sm hover:bg-red-500/10 rounded-xl">
-            <LogOut size={18}/> تسجيل خروج - {currentUser?.username}
-          </button>
-        </div>
-      </aside>
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-white/10 bg-[#0a1028]/50 backdrop-blur-xl flex items-center justify-between px-4">
-          <button onClick={()=>setSidebarOpen(true)} className="lg:hidden text-white"><Menu size={20}/></button>
-          <div className="text-sm text-slate-400 hidden lg:block">مرحبا {currentUser?.username} - دورك: {role}</div>
-          <div className="flex items-center gap-3">
-            <Bell size={18} className="text-slate-400"/>
-            <div className="h-8 w-8 rounded-full bg-blue-500/20 text-blue-300 grid place-items-center text-xs font-bold">{currentUser?.username?.[0]?.toUpperCase()||'م'}</div>
-          </div>
-        </header>
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          {page==='dashboard' && <Dashboard setPage={setPage} />}
-          {page==='patients' && <Patients setPage={setPage} setEditItem={setEditItem} setSelectedPatient={setSelectedPatient} />}
-          {page==='treatments-bulk' && <TreatmentsBulk />}
-          {page==='patient-new' && <PatientForm patient={editItem} onSave={()=>setPage('patients')} onCancel={()=>setPage('patients')} />}
-          {page==='patient-detail' && selectedPatient && <PatientDetail patient={selectedPatient} onBack={()=>setPage('patients')} setPage={setPage} setEditItem={setEditItem} />}
-          {page==='appointments' && <Appointments setPage={setPage} />}
-          {page==='appointment-new' && <AppointmentForm onSave={()=>setPage('appointments')} onCancel={()=>setPage('appointments')} />}
-          {page==='surgeries' && <Surgeries setPage={setPage} setSelectedPatient={setSelectedPatient} />}
-          {page==='surgery-new' && <SurgeryForm onSave={()=>setPage('surgeries')} onCancel={()=>setPage('surgeries')} />}
-          {page==='implants' && <Implants />}
-          {page==='disease-log' && <DiseaseLog />}
-          {page==='reports' && <Reports />}
-          {page==='settings' && <SettingsPage />}
-        </main>
-      </div>
-    </div>
-  );
-                                                                                      }
+          {[{id:'overview', label:'نظرة عامة'},{id:'chart', label:`مخطط الاسنان (${implants.length})`},{id:'treatments', label:`سجل المعالجات (${treatments.length})`},{id:'surgeries', label:`الجراحات (${surgeries.length})`},{id:'followups', label:`المتابعات (${followups.length})`}].map(t=><button key={t.id} onClick={() => setTab(t.i
