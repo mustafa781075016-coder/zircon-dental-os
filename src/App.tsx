@@ -78,8 +78,100 @@ function Login({ onLogin }: { onLogin: () => void }) {
   );
 }
 
+// ====== NEW ARCH TOOTH CHART - PASTE THIS INSTEAD OF OLD ToothChart ======
 const TEETH_UPPER = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
 const TEETH_LOWER = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
+
+const TOOTH_COLORS: any = {
+  1: 'text-red-400 border-red-400/30', 11: 'text-red-400 border-red-400/30', 21: 'text-red-400 border-red-400/30', 31: 'text-red-400 border-red-400/30', 41: 'text-red-400 border-red-400/30',
+  2: 'text-amber-600 border-amber-600/30', 12: 'text-amber-600 border-amber-600/30', 22: 'text-amber-600 border-amber-600/30', 32: 'text-amber-600 border-amber-600/30', 42: 'text-amber-600 border-amber-600/30',
+  3: 'text-emerald-500 border-emerald-500/30', 13: 'text-emerald-500 border-emerald-500/30', 23: 'text-emerald-500 border-emerald-500/30', 33: 'text-emerald-500 border-emerald-500/30', 43: 'text-emerald-500 border-emerald-500/30',
+  4: 'text-sky-600 border-sky-600/30', 14: 'text-sky-600 border-sky-600/30', 24: 'text-sky-600 border-sky-600/30', 34: 'text-sky-600 border-sky-600/30', 44: 'text-sky-600 border-sky-600/30',
+  5: 'text-purple-500 border-purple-500/30', 15: 'text-purple-500 border-purple-500/30', 25: 'text-purple-500 border-purple-500/30', 35: 'text-purple-500 border-purple-500/30', 45: 'text-purple-500 border-purple-500/30',
+  6: 'text-pink-500 border-pink-500/30', 16: 'text-pink-500 border-pink-500/30', 26: 'text-pink-500 border-pink-500/30', 36: 'text-pink-500 border-pink-500/30', 46: 'text-pink-500 border-pink-500/30',
+  7: 'text-lime-500 border-lime-500/30', 17: 'text-lime-500 border-lime-500/30', 27: 'text-lime-500 border-lime-500/30', 37: 'text-lime-500 border-lime-500/30', 47: 'text-lime-500 border-lime-500/30',
+  8: 'text-[#8a9a2a] border-[#8a9a2a]/30', 18: 'text-[#8a9a2a] border-[#8a9a2a]/30', 28: 'text-[#8a9a2a] border-[#8a9a2a]/30', 38: 'text-[#8a9a2a] border-[#8a9a2a]/30', 48: 'text-[#8a9a2a] border-[#8a9a2a]/30',
+};
+
+function getShortNumber(fdi: number) {
+  return fdi % 10; // 18 -> 8 , 11 ->1
+}
+
+function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick: (n:number)=>void }) {
+  const implanted = new Set(implants.map((i:any)=>i.tooth_number));
+  
+  const Arch = ({ teeth, isUpper }: { teeth: number[], isUpper: boolean }) => {
+    return (
+      <div className="relative w-full h-[320px] md:h-[360px] mx-auto max-w-[380px]">
+        {/* قوس خلفي خفيف */}
+        <div className={`absolute left-1/2 -translate-x-1/2 w-[88%] h-[85%] border-[1.5px] border-white/10 rounded-[50%] ${isUpper ? 'top-[8%] rounded-b-none border-b-0' : 'bottom-[8%] rounded-t-none border-t-0'} pointer-events-none`} />
+        
+        {teeth.map((n, idx) => {
+          const total = teeth.length;
+          // زاوية القوس: علوي من 200° إلى 340° ، سفلي من 20° إلى 160°
+          const startAngle = isUpper ? 200 : 20;
+          const endAngle = isUpper ? 340 : 160;
+          const angle = startAngle + (endAngle - startAngle) * (idx / (total - 1));
+          const rad = (angle * Math.PI) / 180;
+          const rx = 42; // نصف قطر أفقي بالنسبة %
+          const ry = 44; // نصف قطر عمودي
+          const cx = 50;
+          const cy = isUpper ? 78 : 22;
+          const x = cx + rx * Math.cos(rad);
+          const y = cy + ry * Math.sin(rad);
+          const has = implanted.has(n);
+          const shortNum = getShortNumber(n);
+          const colorClass = (TOOTH_COLORS as any)[n] || 'text-slate-300 border-white/10';
+          
+          return (
+            <button
+              key={n}
+              onClick={() => onToothClick(n)}
+              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
+              className={`absolute w-[46px] h-[54px] md:w-[50px] md:h-[58px] rounded-[14px] border-2 bg-[#0f1a3a] shadow-lg flex flex-col items-center justify-center transition-all hover:scale-110 hover:z-10
+                ${has ? '!bg-emerald-500/30 !border-emerald-400 !text-emerald-200 shadow-emerald-500/30' : `bg-white/[0.04] hover:bg-white/[0.08] ${colorClass}`}`}
+              title={`سن ${n}`}
+            >
+              <span className="text-[11px] font-bold leading-none opacity-60">{n}</span>
+              <span className={`text-[20px] font-bold leading-none mt-1 ${has ? 'text-emerald-300' : ''}`}>{shortNum}</span>
+              {has && <span className="text-[8px] font-bold mt-0.5 text-emerald-300">زرعة</span>}
+            </button>
+          );
+        })}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] text-slate-500/50 tracking-widest">
+          {isUpper ? 'علوي' : 'سفلي'}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className={card + ' !p-3 md:!p-5'}>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-semibold text-white text-sm md:text-base">مخطط الأسنان - اضغط على السن لإضافة زرعة</h3>
+        <div className="flex gap-2 text-[9px]">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>مزروع</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white/20"></span>فارغ</span>
+        </div>
+      </div>
+      
+      <div className="grid md:grid-cols-2 gap-2 md:gap-6">
+        <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-2">
+          <div className="text-center text-[11px] text-slate-400 mb-1">الفك العلوي</div>
+          <Arch teeth={TEETH_UPPER} isUpper={true} />
+        </div>
+        <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-2">
+          <div className="text-center text-[11px] text-slate-400 mb-1">الفك السفلي</div>
+          <Arch teeth={TEETH_LOWER} isUpper={false} />
+        </div>
+      </div>
+      
+      <div className="mt-3 flex flex-wrap gap-1.5 justify-center text-[10px] text-slate-500">
+        <span>الأرقام الكبيرة: الترقيم البسيط (مثل صورتك) - الأرقام الصغيرة فوق: ترقيم FDI العالمي</span>
+      </div>
+    </div>
+  );
+}
 
 function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick: (n:number)=>void }) {
   const implanted = new Set(implants.map((i:any)=>i.tooth_number));
