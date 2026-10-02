@@ -173,29 +173,6 @@ function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick:
   );
 }
 
-function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick: (n:number)=>void }) {
-  const implanted = new Set(implants.map((i:any)=>i.tooth_number));
-  return (
-    <div className={card}>
-      <h3 className="font-semibold text-white mb-4">مخطط الاسنان - اضغط على السن لاضافة زرعة</h3>
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-1.5 justify-center p-3 rounded-xl bg-white/[0.02] border border-white/5">
-          {TEETH_UPPER.map(n=>{
-            const has = implanted.has(n);
-            return <button key={n} onClick={()=>onToothClick(n)} className={`h-10 w-8 rounded-lg border text-xs font-bold ${has? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}`}>{n}</button>
-          })}
-        </div>
-        <div className="flex flex-wrap gap-1.5 justify-center p-3 rounded-xl bg-white/[0.02] border border-white/5">
-          {TEETH_LOWER.map(n=>{
-            const has = implanted.has(n);
-            return <button key={n} onClick={()=>onToothClick(n)} className={`h-10 w-8 rounded-lg border text-xs font-bold ${has? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}`}>{n}</button>
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
   const [stats, setStats] = useState({ patients: 0, today: 0, surgeries: 0, implants: 0, followups: 0, unpaid: 0 });
   const [recent, setRecent] = useState<any[]>([]);
