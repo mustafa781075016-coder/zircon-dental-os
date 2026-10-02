@@ -1,3 +1,4 @@
+```tsx
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -77,6 +78,8 @@ function Login({ onLogin }: { onLogin: () => void }) {
     </div>
   );
 }
+
+
 
 // ====== NEW ARCH TOOTH CHART - PASTE THIS INSTEAD OF OLD ToothChart ======
 const TEETH_UPPER = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
@@ -173,6 +176,7 @@ function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick:
   );
 }
 
+
 function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
   const [stats, setStats] = useState({ patients: 0, today: 0, surgeries: 0, implants: 0, followups: 0, unpaid: 0 });
   const [recent, setRecent] = useState<any[]>([]);
@@ -186,7 +190,7 @@ function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
       const mStart = new Date(); mStart.setDate(1); mStart.setHours(0,0,0,0);
       const [p, a, s, i, f, inv] = await Promise.all([
         supabase.from('patients').select('*', { count: 'exact', head: true }),
-                supabase.from('appointments').select('*', { count: 'exact', head: true }).gte('scheduled_start', start.toISOString()).lte('scheduled_start', end.toISOString()),
+        supabase.from('appointments').select('*', { count: 'exact', head: true }).gte('scheduled_start', start.toISOString()).lte('scheduled_start', end.toISOString()),
         supabase.from('surgeries').select('*', { count: 'exact', head: true }).gte('created_at', mStart.toISOString()),
         supabase.from('implants').select('*', { count: 'exact', head: true }),
         supabase.from('follow_ups').select('*', { count: 'exact', head: true }).eq('status','scheduled'),
@@ -250,7 +254,7 @@ function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
         <div className={card}>
           <h3 className="font-semibold text-white mb-4">مواعيد اليوم</h3>
           <div className="space-y-2">
-            {todayAppts.length===0? <p className="text-sm text-slate-500">لا توجد مواعيد اليوم</p> :
+            {todayAppts.length===0 ? <p className="text-sm text-slate-500">لا توجد مواعيد اليوم</p> :
               todayAppts.map((a:any) => (
               <div key={a.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
                 <div className="text-sm font-semibold text-blue-300 w-14" dir="ltr">{new Date(a.scheduled_start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
@@ -262,7 +266,7 @@ function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
         <div className={card + ' border-amber-500/20'}>
           <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Clock size={16} className="text-amber-400"/> متابعات تحتاج تواصل</h3>
           <div className="space-y-2">
-            {upcomingFollowups.length===0? <p className="text-sm text-slate-500">لا توجد متابعات قادمة</p> :
+            {upcomingFollowups.length===0 ? <p className="text-sm text-slate-500">لا توجد متابعات قادمة</p> :
               upcomingFollowups.map((f:any) => (
               <div key={f.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
                 <div className="flex-1 min-w-0">
@@ -304,9 +308,9 @@ function Patients({ setPage, setEditItem, setSelectedPatient }: any) {
         </div>
         <button onClick={() => { setEditItem(null); setPage('patient-new'); }} className={btnSm}><Plus size={16}/> مريض جديد</button>
       </div>
-      <div className={card + '!p-0 overflow-hidden'}>
-        {loading? <div className="p-8 text-center text-slate-400">جاري التحميل...</div> :
-         list.length === 0? <div className="p-8 text-center text-slate-400">لا يوجد مرضى</div> : (
+      <div className={card + ' !p-0 overflow-hidden'}>
+        {loading ? <div className="p-8 text-center text-slate-400">جاري التحميل...</div> :
+         list.length === 0 ? <div className="p-8 text-center text-slate-400">لا يوجد مرضى</div> : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-white/5 text-slate-400 text-xs">
@@ -331,7 +335,7 @@ function Patients({ setPage, setEditItem, setSelectedPatient }: any) {
 }
 
 function PatientForm({ patient, onSave, onCancel }: any) {
-  const isEdit =!!patient?.id;
+  const isEdit = !!patient?.id;
   const [form, setForm] = useState({
     full_name: patient?.full_name || '', phone: patient?.phone || '', medical_alerts: patient?.medical_alerts || '', notes: patient?.notes || '',
     gender: patient?.gender || '', date_of_birth: patient?.date_of_birth || '',
@@ -339,31 +343,32 @@ function PatientForm({ patient, onSave, onCancel }: any) {
   const [err, setErr] = useState(''); const [loading, setLoading] = useState(false);
   async function submit(e: any) {
     e.preventDefault(); setErr('');
-    if (!form.full_name.trim() ||!form.phone.trim()) { setErr('الاسم والجوال مطلوبان'); return; }
+    if (!form.full_name.trim() || !form.phone.trim()) { setErr('الاسم والجوال مطلوبان'); return; }
     setLoading(true);
     const payload: any = { full_name: form.full_name.trim(), phone: form.phone.trim(), gender: form.gender || null, date_of_birth: form.date_of_birth || null, medical_alerts: form.medical_alerts || null, notes: form.notes || null };
-    let res = isEdit? await supabase.from('patients').update(payload).eq('id', patient.id) : await supabase.from('patients').insert(payload);
+    let res = isEdit ? await supabase.from('patients').update(payload).eq('id', patient.id) : await supabase.from('patients').insert(payload);
     setLoading(false);
     if (res.error) { setErr(res.error.message); return; }
     onSave();
   }
   return (
     <form onSubmit={submit} className="space-y-5 max-w-3xl">
-      <div className="flex items-center gap-3"><button type="button" onClick={onCancel} className="text-slate-400"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">{isEdit? 'تعديل المريض' : 'اضافة مريض جديد'}</h2></div>
+      <div className="flex items-center gap-3"><button type="button" onClick={onCancel} className="text-slate-400"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">{isEdit ? 'تعديل المريض' : 'اضافة مريض جديد'}</h2></div>
       <div className={card}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label><span className={label}>الاسم *</span><input className={inp} value={form.full_name} onChange={(e) => setForm({...form, full_name: e.target.value })} required /></label>
-          <label><span className={label}>الجوال *</span><input className={inp} dir="ltr" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value })} required /></label>
-          <label><span className={label}>الجنس</span><select className={inp} value={form.gender} onChange={(e) => setForm({...form, gender: e.target.value })}><option value="">—</option><option value="male">ذكر</option><option value="female">انثى</option></select></label>
-          <label><span className={label}>تاريخ الميلاد</span><input className={inp} type="date" value={form.date_of_birth} onChange={(e) => setForm({...form, date_of_birth: e.target.value })} /></label>
-          <label className="md:col-span-2"><span className={label}>تنبيهات طبية</span><textarea className={inp} rows={2} value={form.medical_alerts} onChange={(e) => setForm({...form, medical_alerts: e.target.value })} /></label>
+          <label><span className={label}>الاسم *</span><input className={inp} value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></label>
+          <label><span className={label}>الجوال *</span><input className={inp} dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required /></label>
+          <label><span className={label}>الجنس</span><select className={inp} value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}><option value="">—</option><option value="male">ذكر</option><option value="female">انثى</option></select></label>
+          <label><span className={label}>تاريخ الميلاد</span><input className={inp} type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} /></label>
+          <label className="md:col-span-2"><span className={label}>تنبيهات طبية</span><textarea className={inp} rows={2} value={form.medical_alerts} onChange={(e) => setForm({ ...form, medical_alerts: e.target.value })} /></label>
         </div>
       </div>
       {err && <div className="rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">{err}</div>}
-      <div className="flex gap-3"><button type="submit" disabled={loading} className={btnSm + '!px-6!py-2.5'}>{loading? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>} حفظ</button><button type="button" onClick={onCancel} className={btnGhost}>الغاء</button></div>
+      <div className="flex gap-3"><button type="submit" disabled={loading} className={btnSm + ' !px-6 !py-2.5'}>{loading ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>} حفظ</button><button type="button" onClick={onCancel} className={btnGhost}>الغاء</button></div>
     </form>
   );
 }
+
 function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
   const [tab, setTab] = useState('overview');
   const [surgeries, setSurgeries] = useState<any[]>([]);
@@ -392,11 +397,11 @@ function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
         <h2 className="text-xl font-bold text-white">{patient.full_name}</h2>
         <span className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-300 font-mono" dir="ltr">{patient.patient_code}</span>
         <div className="flex-1" />
-        <a href={`https://wa.me/${patient.phone?.replace(/\D/g,'')}`} target="_blank" className={btnSm + '!bg-emerald-600'}><MessageCircle size={16}/> واتساب</a>
+        <a href={`https://wa.me/${patient.phone?.replace(/\D/g,'')}`} target="_blank" className={btnSm + ' !bg-emerald-600'}><MessageCircle size={16}/> واتساب</a>
         <button onClick={()=>{ setEditItem(patient); setPage('patient-new'); }} className={btnGhost}><Edit3 size={16}/> تعديل</button>
       </div>
       <div className="border-b border-white/10 overflow-x-auto"><div className="flex gap-1 min-w-max">
-        {[{id:'overview', label:'نظرة عامة'},{id:'chart', label:`مخطط الاسنان (${implants.length})`},{id:'surgeries', label:`الجراحات (${surgeries.length})`},{id:'followups', label:`المتابعات (${followups.length})`}].map(t=><button key={t.id} onClick={() => setTab(t.id)} className={'px-4 py-2.5 text-sm border-b-2 whitespace-nowrap ' + (tab === t.id? 'border-blue-500 text-white' : 'border-transparent text-slate-400')}>{t.label}</button>)}
+        {[{id:'overview', label:'نظرة عامة'},{id:'chart', label:`مخطط الاسنان (${implants.length})`},{id:'surgeries', label:`الجراحات (${surgeries.length})`},{id:'followups', label:`المتابعات (${followups.length})`}].map(t=><button key={t.id} onClick={() => setTab(t.id)} className={'px-4 py-2.5 text-sm border-b-2 whitespace-nowrap ' + (tab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-slate-400')}>{t.label}</button>)}
       </div></div>
       {tab==='overview' && <div className={card}><div className="grid grid-cols-3 gap-3 text-center"><div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-white">{surgeries.length}</div><div className="text-xs text-slate-400">جراحات</div></div><div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-emerald-400">{implants.length}</div><div className="text-xs text-slate-400">زرعات</div></div><div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-amber-400">{followups.length}</div><div className="text-xs text-slate-400">متابعات</div></div></div></div>}
       {tab==='chart' && <div className="space-y-4"><ToothChart implants={implants} onToothClick={handleToothClick}/><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{implants.map((im:any)=><div key={im.id} className={card}><div className="flex justify-between"><span className="text-2xl font-bold text-emerald-400">{im.tooth_number}</span><span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300">{im.status}</span></div><div className="text-sm text-white mt-1">{im.brand}</div><div className="text-xs text-slate-400 mt-1" dir="ltr">{im.diameter_mm} x {im.length_mm} mm | Torque {im.torque_ncm} Ncm</div></div>)}</div></div>}
@@ -409,7 +414,7 @@ function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
           for (const d of dates) { const dt = new Date(base); dt.setDate(dt.getDate()+d.days); await supabase.from('follow_ups').insert({ patient_id: patient.id, surgery_id: surgeries[0].id, follow_type: d.type, scheduled_date: dt.toISOString().slice(0,10), status:'scheduled' }); }
           load();
         }} className={btnSm}><Plus size={16}/> انشاء متابعات تلقائية</button>
-        {followups.map((f:any)=><div key={f.id} className={card + ' flex justify-between items-center'}><div><div className="text-white">{f.follow_type}</div><div className="text-xs text-slate-400">{fmtDate(f.scheduled_date)}</div></div><span className={`text-xs px-2 py-1 rounded ${f.status==='completed'? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{f.status}</span></div>)}
+        {followups.map((f:any)=><div key={f.id} className={card + ' flex justify-between items-center'}><div><div className="text-white">{f.follow_type}</div><div className="text-xs text-slate-400">{fmtDate(f.scheduled_date)}</div></div><span className={`text-xs px-2 py-1 rounded ${f.status==='completed' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{f.status}</span></div>)}
       </div>}
       {showImplantModal && <ImplantModal surgeryId={surgeries[0]?.id} patientId={patient.id} initialTooth={selectedTooth} onClose={()=>setShowImplantModal(false)} onSave={()=>{ setShowImplantModal(false); load(); }} />}
     </div>
@@ -419,13 +424,13 @@ function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
 function Surgeries({ setPage, setSelectedPatient }: any) {
   const [list, setList] = useState<any[]>([]);
   useEffect(()=>{ (async()=>{ const {data}=await supabase.from('surgeries').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
-  return <div className="space-y-4"><div className="flex justify-between"><h2 className="text-xl font-bold text-white">الجراحات</h2><button onClick={()=>setPage('surgery-new')} className={btnSm}><Plus size={16}/> جراحة جديدة</button></div><div className={card + '!p-0 overflow-hidden'}><table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">النوع</th></tr></thead><tbody className="divide-y divide-white/5">{list.map((s:any)=><tr key={s.id} className="hover:bg-white/5"><td className="px-4 py-3 text-slate-300 text-xs">{fmtDate(s.scheduled_date)}</td><td className="px-4 py-3 text-white"><button onClick={()=>{ setSelectedPatient(s.patient); setPage('patient-detail'); }} className="text-blue-400">{s.patient?.full_name}</button></td><td className="px-4 py-3 text-slate-300 text-xs">{s.surgery_type}</td></tr>)}</tbody></table></div></div>;
+  return <div className="space-y-4"><div className="flex justify-between"><h2 className="text-xl font-bold text-white">الجراحات</h2><button onClick={()=>setPage('surgery-new')} className={btnSm}><Plus size={16}/> جراحة جديدة</button></div><div className={card + ' !p-0 overflow-hidden'}><table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">النوع</th></tr></thead><tbody className="divide-y divide-white/5">{list.map((s:any)=><tr key={s.id} className="hover:bg-white/5"><td className="px-4 py-3 text-slate-300 text-xs">{fmtDate(s.scheduled_date)}</td><td className="px-4 py-3 text-white"><button onClick={()=>{ setSelectedPatient(s.patient); setPage('patient-detail'); }} className="text-blue-400">{s.patient?.full_name}</button></td><td className="px-4 py-3 text-slate-300 text-xs">{s.surgery_type}</td></tr>)}</tbody></table></div></div>;
 }
 
 function Appointments({ setPage }: any) {
   const [list, setList] = useState<any[]>([]);
   useEffect(()=>{ (async()=>{ const {data}=await supabase.from('appointments').select('*, patient:patients(full_name)').order('scheduled_start',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
-  return <div className="space-y-4"><div className="flex justify-between"><h2 className="text-xl font-bold text-white">المواعيد</h2><button onClick={()=>setPage('appointment-new')} className={btnSm}><Plus size={16}/> موعد جديد</button></div><div className={card + '!p-0 overflow-hidden'}><table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">النوع</th></tr></thead><tbody className="divide-y divide-white/5">{list.map((a:any)=><tr key={a.id} className="hover:bg-white/5"><td className="px-4 py-3 text-slate-300 text-xs">{fmtDateTime(a.scheduled_start)}</td><td className="px-4 py-3 text-white">{a.patient?.full_name}</td><td className="px-4 py-3 text-slate-300 text-xs">{a.appointment_type}</td></tr>)}</tbody></table></div></div>;
+  return <div className="space-y-4"><div className="flex justify-between"><h2 className="text-xl font-bold text-white">المواعيد</h2><button onClick={()=>setPage('appointment-new')} className={btnSm}><Plus size={16}/> موعد جديد</button></div><div className={card + ' !p-0 overflow-hidden'}><table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">النوع</th></tr></thead><tbody className="divide-y divide-white/5">{list.map((a:any)=><tr key={a.id} className="hover:bg-white/5"><td className="px-4 py-3 text-slate-300 text-xs">{fmtDateTime(a.scheduled_start)}</td><td className="px-4 py-3 text-white">{a.patient?.full_name}</td><td className="px-4 py-3 text-slate-300 text-xs">{a.appointment_type}</td></tr>)}</tbody></table></div></div>;
 }
 
 function AppointmentForm({ onSave, onCancel }: any) {
@@ -515,14 +520,14 @@ export default function App() {
   return (
     <div dir="rtl" className="min-h-screen bg-[#060a1a] text-white flex">
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={()=>setSidebarOpen(false)} />}
-      <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-64 border-l border-white/10 bg-[#0a1028] p-4 flex flex-col transition-transform ${sidebarOpen? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-64 border-l border-white/10 bg-[#0a1028] p-4 flex flex-col transition-transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3"><div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 grid place-items-center font-bold">Z</div><div><div className="font-bold">Zircon</div><div className="text-[10px] text-slate-400">Dental OS V2</div></div></div>
           <button onClick={()=>setSidebarOpen(false)} className="lg:hidden text-slate-400"><X size={18}/></button>
         </div>
         <nav className="space-y-1 flex-1 overflow-y-auto">
           {menu.map(m=>(
-            <button key={m.id} onClick={()=>{ setPage(m.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 text-right p-3 rounded-xl text-sm transition ${page===m.id? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'hover:bg-white/5 text-slate-300'}`}>
+            <button key={m.id} onClick={()=>{ setPage(m.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 text-right p-3 rounded-xl text-sm transition ${page===m.id ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'hover:bg-white/5 text-slate-300'}`}>
               <m.icon size={18}/> {m.label}
             </button>
           ))}
@@ -552,3 +557,4 @@ export default function App() {
     </div>
   );
 }
+```
