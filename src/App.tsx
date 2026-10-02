@@ -396,15 +396,17 @@ function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
   const [surgeries, setSurgeries] = useState<any[]>([]);
   const [implants, setImplants] = useState<any[]>([]);
   const [followups, setFollowups] = useState<any[]>([]);
+  const [treatments, setTreatments] = useState<any[]>([]);
   const [showImplantModal, setShowImplantModal] = useState(false);
   const [selectedTooth, setSelectedTooth] = useState<number>(11);
   const load = useCallback(async()=>{
-    const [s, i, f] = await Promise.all([
+    const [s, i, f, t] = await Promise.all([
       supabase.from('surgeries').select('*').eq('patient_id', patient.id).order('created_at',{ascending:false}),
       supabase.from('implants').select('*').eq('patient_id', patient.id).order('created_at',{ascending:false}),
       supabase.from('follow_ups').select('*').eq('patient_id', patient.id).order('scheduled_date'),
+      supabase.from('treatments').select('*').eq('patient_id', patient.id).order('created_at',{ascending:false}),
     ]);
-    setSurgeries(s.data||[]); setImplants(i.data||[]); setFollowups(f.data||[]);
+    setSurgeries(s.data||[]); setImplants(i.data||[]); setFollowups(f.data||[]); setTreatments(t.data||[]);
   },[patient.id]);
   useEffect(()=>{ load(); },[load]);
   function handleToothClick(tooth: number) {
@@ -423,11 +425,12 @@ function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
         <button onClick={()=>{ setEditItem(patient); setPage('patient-new'); }} className={btnGhost}><Edit3 size={16}/> تعديل</button>
       </div>
       <div className="border-b border-white/10 overflow-x-auto"><div className="flex gap-1 min-w-max">
-        {[{id:'overview', label:'نظرة عامة'},{id:'chart', label:`مخطط الاسنان (${implants.length})`},{id:'surgeries', label:`الجراحات (${surgeries.length})`},{id:'followups', label:`المتابعات (${followups.length})`}].map(t=><button key={t.id} onClick={() => setTab(t.id)} className={'px-4 py-2.5 text-sm border-b-2 whitespace-nowrap ' + (tab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-slate-400')}>{t.label}</button>)}
+        {[{id:'overview', label:'نظرة عامة'},{id:'chart', label:`مخطط الاسنان (${implants.length})`},{id:'treatments', label:`المعالجات (${treatments.length})`},{id:'surgeries', label:`الجراحات (${surgeries.length})`},{id:'followups', label:`المتابعات (${followups.length})`}].map(t=><button key={t.id} onClick={() => setTab(t.id)} className={'px-4 py-2.5 text-sm border-b-2 whitespace-nowrap ' + (tab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-slate-400')}>{t.label}</button>)}
       </div></div>
       {tab==='overview' && <div className={card}><div className="grid grid-cols-3 gap-3 text-center"><div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-white">{surgeries.length}</div><div className="text-xs text-slate-400">جراحات</div></div><div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-emerald-400">{implants.length}</div><div className="text-xs text-slate-400">زرعات</div></div><div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-amber-400">{followups.length}</div><div className="text-xs text-slate-400">متابعات</div></div></div></div>}
       {tab==='chart' && <div className="space-y-4"><ToothChart implants={implants} onToothClick={handleToothClick}/><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{implants.map((im:any)=><div key={im.id} className={card}><div className="flex justify-between"><span className="text-2xl font-bold text-emerald-400">{im.tooth_number}</span><span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300">{im.status}</span></div><div className="text-sm text-white mt-1">{im.brand}</div><div className="text-xs text-slate-400 mt-1" dir="ltr">{im.diameter_mm} x {im.length_mm} mm | Torque {im.torque_ncm} Ncm</div></div>)}</div></div>}
       {tab==='surgeries' && <div className="space-y-3">{surgeries.map((s:any)=><div key={s.id} className={card + ' flex justify-between items-center'}><div><div className="text-white font-medium">{s.surgery_type} - {fmtDate(s.scheduled_date)}</div><div className="text-xs text-slate-400">{s.status}</div></div></div>)}</div>}
+      {tab==='treatments' && <div className="space-y-3">{treatments.length===0 ? <p className="text-sm text-slate-500">لا توجد معالجات</p> : treatments.map((tr:any)=><div key={tr.id} className={card + ' flex justify-between items-center'}><div><div className="text-white font-medium">{tr.treatment_type} - سن {tr.tooth_number || '—'}</div><div className="text-xs text-slate-400">{tr.description || ''} - {tr.cost ? `${tr.cost} ر.س` : ''}</div><div className="text-[10px] text-slate-500 mt-1">{fmtDate(tr.created_at)}</div></div><span className={`text-xs px-2 py-1 rounded ${tr.status==='completed' ? 'bg-emerald-500/20 text-emerald-300' : tr.status==='in_progress' ? 'bg-blue-500/20 text-blue-300' : 'bg-amber-500/20 text-amber-300'}`}>{tr.status}</span></div>)}</div>}
       {tab==='followups' && <div className="space-y-3">
         <button onClick={async()=>{
           if (surgeries.length===0) { alert('انشئ جراحة اولا'); return; }
@@ -594,7 +597,7 @@ function TreatmentForm({ onSave, onCancel }: any) {
       </div>
       {err && <div className="rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">{err}</div>}
       <div className="flex gap-3"><button type="submit" disabled={loading} className={btnSm + ' !px-6'}>{loading ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>} حفظ المعالجة</button><button type="button" onClick={onCancel} className={btnGhost}>إلغاء</button></div>
-      <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-[11px] text-blue-300">⚠️ أول مرة: يجب إنشاء جدول treatments في Supabase - انسخ هذا الكود في SQL Editor:<br/><code className="text-[10px] text-slate-300 block mt-2 whitespace-pre-wrap">create table treatments (id uuid primary key default gen_random_uuid(), patient_id uuid references patients(id) on delete cascade, tooth_number int, treatment_type text not null, description text, cost numeric, status text default 'planned', created_at timestamp default now()); alter table treatments enable row level security; create policy "Allow all" on treatments for all using (true) with check (true);</code></div>
+
     </form>
   );
 }
