@@ -81,22 +81,49 @@ function Login({ onLogin }: { onLogin: () => void }) {
 
 
 // ====== NEW ARCH TOOTH CHART - PASTE THIS INSTEAD OF OLD ToothChart ======
+
 const TEETH_UPPER = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
 const TEETH_LOWER = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
 
 const TOOTH_COLORS: any = {
-  1: 'text-red-400 border-red-400/30', 11: 'text-red-400 border-red-400/30', 21: 'text-red-400 border-red-400/30', 31: 'text-red-400 border-red-400/30', 41: 'text-red-400 border-red-400/30',
-  2: 'text-amber-600 border-amber-600/30', 12: 'text-amber-600 border-amber-600/30', 22: 'text-amber-600 border-amber-600/30', 32: 'text-amber-600 border-amber-600/30', 42: 'text-amber-600 border-amber-600/30',
-  3: 'text-emerald-500 border-emerald-500/30', 13: 'text-emerald-500 border-emerald-500/30', 23: 'text-emerald-500 border-emerald-500/30', 33: 'text-emerald-500 border-emerald-500/30', 43: 'text-emerald-500 border-emerald-500/30',
-  4: 'text-sky-600 border-sky-600/30', 14: 'text-sky-600 border-sky-600/30', 24: 'text-sky-600 border-sky-600/30', 34: 'text-sky-600 border-sky-600/30', 44: 'text-sky-600 border-sky-600/30',
-  5: 'text-purple-500 border-purple-500/30', 15: 'text-purple-500 border-purple-500/30', 25: 'text-purple-500 border-purple-500/30', 35: 'text-purple-500 border-purple-500/30', 45: 'text-purple-500 border-purple-500/30',
-  6: 'text-pink-500 border-pink-500/30', 16: 'text-pink-500 border-pink-500/30', 26: 'text-pink-500 border-pink-500/30', 36: 'text-pink-500 border-pink-500/30', 46: 'text-pink-500 border-pink-500/30',
-  7: 'text-lime-500 border-lime-500/30', 17: 'text-lime-500 border-lime-500/30', 27: 'text-lime-500 border-lime-500/30', 37: 'text-lime-500 border-lime-500/30', 47: 'text-lime-500 border-lime-500/30',
-  8: 'text-[#8a9a2a] border-[#8a9a2a]/30', 18: 'text-[#8a9a2a] border-[#8a9a2a]/30', 28: 'text-[#8a9a2a] border-[#8a9a2a]/30', 38: 'text-[#8a9a2a] border-[#8a9a2a]/30', 48: 'text-[#8a9a2a] border-[#8a9a2a]/30',
+  1: '#e06a6a', 2: '#b78a4a', 3: '#2ea86a', 4: '#3a8ab5', 5: '#6b4c9a', 6: '#d16a8a', 7: '#a3b82a', 8: '#7a8a2e',
 };
 
-function getShortNumber(fdi: number) {
-  return fdi % 10; // 18 -> 8 , 11 ->1
+function getShortNumber(fdi: number) { return fdi % 10; }
+
+function ToothShape({ num, has, onClick }: { num: number, has: boolean, onClick: () => void }) {
+  const shortNum = getShortNumber(num);
+  const color = (TOOTH_COLORS as any)[shortNum] || '#94a3b8';
+  const isMolar = shortNum >= 6;
+  const isPremolar = shortNum === 4 || shortNum === 5;
+  const isCanine = shortNum === 3;
+  
+  // شكل السن حسب النوع - مطابق للصورة
+  let path = "";
+  let vb = "0 0 50 60";
+  if (shortNum === 1) {
+    path = "M 8 12 Q 25 2 42 12 Q 40 32 25 46 Q 10 32 8 12 Z"; // مثلث قاطع مركزي
+  } else if (shortNum === 2) {
+    path = "M 10 14 Q 25 4 40 14 Q 38 30 25 42 Q 12 30 10 14 Z"; // قاطع جانبي
+  } else if (shortNum === 3) {
+    path = "M 13 10 Q 25 0 37 10 Q 40 26 25 48 Q 10 26 13 10 Z"; // ناب مدبب
+  } else if (isPremolar) {
+    path = "M 10 16 Q 25 6 40 16 Q 43 30 40 46 Q 25 56 10 46 Q 7 30 10 16 Z"; // ضاحك بيضاوي
+  } else {
+    path = "M 8 14 Q 14 8 25 10 Q 36 8 42 14 Q 46 22 44 34 Q 46 46 41 52 Q 32 56 25 54 Q 18 56 9 52 Q 4 46 6 34 Q 4 22 8 14 Z"; // رحى مموجة
+  }
+
+  return (
+    <button onClick={onClick} className="absolute group" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', height: '100%' }}>
+      <svg viewBox={vb} className="w-full h-full overflow-visible">
+        <path d={path} fill={has ? '#10b981' : 'rgba(255,255,255,0.04)'} stroke={has ? '#10b981' : 'rgba(255,255,255,0.25)'} strokeWidth="1.6" className="transition-all group-hover:fill-white/[0.08] group-hover:stroke-white/40" />
+        <text x="25" y={isMolar ? "34" : "30"} textAnchor="middle" dominantBaseline="middle" fontSize={isMolar ? "20" : "22"} fontWeight="800" fill={has ? 'white' : color} className="select-none" style={{ fontFamily: 'system-ui' }}>{shortNum}</text>
+        {has && <text x="25" y="44" textAnchor="middle" fontSize="7" fontWeight="700" fill="white">زرعة</text>}
+      </svg>
+      {/* رقم FDI صغير فوق */}
+      <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-[8px] font-bold text-slate-500/70 group-hover:text-slate-300">{num}</span>
+    </button>
+  );
 }
 
 function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick: (n:number)=>void }) {
@@ -104,76 +131,71 @@ function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick:
   
   const Arch = ({ teeth, isUpper }: { teeth: number[], isUpper: boolean }) => {
     return (
-      <div className="relative w-full h-[320px] md:h-[360px] mx-auto max-w-[380px]">
-        {/* قوس خلفي خفيف */}
-        <div className={isUpper ? 'absolute left-1/2 -translate-x-1/2 w-[88%] h-[85%] border-[1.5px] border-white/10 rounded-[50%] top-[8%] rounded-b-none border-b-0 pointer-events-none' : 'absolute left-1/2 -translate-x-1/2 w-[88%] h-[85%] border-[1.5px] border-white/10 rounded-[50%] bottom-[8%] rounded-t-none border-t-0 pointer-events-none'} />
-        
+      <div className="relative w-full h-[440px] md:h-[480px] mx-auto max-w-[420px]">
+        {/* قوس خلفي */}
+        <div className={`absolute left-1/2 -translate-x-1/2 w-[92%] h-[92%] border border-white/10 rounded-[50%] pointer-events-none ${isUpper ? 'top-[4%] rounded-b-none border-b-0' : 'bottom-[4%] rounded-t-none border-t-0'}`} />
         {teeth.map((n, idx) => {
           const total = teeth.length;
-          // زاوية القوس: علوي من 200° إلى 340° ، سفلي من 20° إلى 160°
-          const startAngle = isUpper ? 200 : 20;
-          const endAngle = isUpper ? 340 : 160;
+          const startAngle = isUpper ? 180 : 0;
+          const endAngle = isUpper ? 360 : 180;
           const angle = startAngle + (endAngle - startAngle) * (idx / (total - 1));
           const rad = (angle * Math.PI) / 180;
-          const rx = 42; // نصف قطر أفقي بالنسبة %
-          const ry = 44; // نصف قطر عمودي
+          const rx = 43;
+          const ry = 54;
           const cx = 50;
-          const cy = isUpper ? 78 : 22;
+          const cy = isUpper ? 80 : 20;
           const x = cx + rx * Math.cos(rad);
           const y = cy + ry * Math.sin(rad);
           const has = implanted.has(n);
-          const shortNum = getShortNumber(n);
-          const colorClass = (TOOTH_COLORS as any)[n] || 'text-slate-300 border-white/10';
-          
           return (
-            <button
-              key={n}
-              onClick={() => onToothClick(n)}
-              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-              className={`absolute w-[46px] h-[54px] md:w-[50px] md:h-[58px] rounded-[14px] border-2 bg-[#0f1a3a] shadow-lg flex flex-col items-center justify-center transition-all hover:scale-110 hover:z-10
-                ${has ? '!bg-emerald-500/30 !border-emerald-400 !text-emerald-200 shadow-emerald-500/30' : `bg-white/[0.04] hover:bg-white/[0.08] ${colorClass}`}`}
-              title={`سن ${n}`}
-            >
-              <span className="text-[11px] font-bold leading-none opacity-60">{n}</span>
-              <span className={`text-[20px] font-bold leading-none mt-1 ${has ? 'text-emerald-300' : ''}`}>{shortNum}</span>
-              {has && <span className="text-[8px] font-bold mt-0.5 text-emerald-300">زرعة</span>}
-            </button>
+            <div key={n} style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }} className="absolute w-[44px] h-[52px] md:w-[48px] md:h-[56px]">
+              <ToothShape num={n} has={has} onClick={() => onToothClick(n)} />
+            </div>
           );
         })}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] text-slate-500/50 tracking-widest">
-          {isUpper ? 'علوي' : 'سفلي'}
-        </div>
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] text-slate-500/30 tracking-widest pointer-events-none">{isUpper ? 'علوي' : 'سفلي'}</div>
       </div>
     );
   };
 
   return (
-    <div className={card + ' !p-3 md:!p-5'}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-white text-sm md:text-base">مخطط الأسنان - اضغط على السن لإضافة زرعة</h3>
-        <div className="flex gap-2 text-[9px]">
+    <div className={card + ' !p-3 md:!p-5 !bg-white/[.03]'}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-white text-sm md:text-base">مخطط الأسنان - الترقيم 1-8 الملون (اضغط على السن)</h3>
+        <div className="flex gap-2 text-[9px] text-slate-400">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>مزروع</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white/20"></span>فارغ</span>
         </div>
       </div>
-      
-      <div className="grid md:grid-cols-2 gap-2 md:gap-6">
+      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
         <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-2">
-          <div className="text-center text-[11px] text-slate-400 mb-1">الفك العلوي</div>
+          <div className="text-center text-[11px] text-slate-400 mb-1 font-medium">الفك العلوي</div>
           <Arch teeth={TEETH_UPPER} isUpper={true} />
         </div>
         <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-2">
-          <div className="text-center text-[11px] text-slate-400 mb-1">الفك السفلي</div>
+          <div className="text-center text-[11px] text-slate-400 mb-1 font-medium">الفك السفلي</div>
           <Arch teeth={TEETH_LOWER} isUpper={false} />
         </div>
       </div>
-      
-      <div className="mt-3 flex flex-wrap gap-1.5 justify-center text-[10px] text-slate-500">
-        <span>الأرقام الكبيرة: الترقيم البسيط (مثل صورتك) - الأرقام الصغيرة فوق: ترقيم FDI العالمي</span>
+      <div className="mt-4 flex flex-wrap justify-center gap-2 text-[10px]">
+        {[
+          {n:1,c:'#e06a6a',l:'قواطع مركزية'},
+          {n:2,c:'#b78a4a',l:'قواطع جانبية'},
+          {n:3,c:'#2ea86a',l:'أنياب'},
+          {n:4,c:'#3a8ab5',l:'ضواحك أولى'},
+          {n:5,c:'#6b4c9a',l:'ضواحك ثانية'},
+          {n:6,c:'#d16a8a',l:'أرحاء أولى'},
+          {n:7,c:'#a3b82a',l:'أرحاء ثانية'},
+          {n:8,c:'#7a8a2e',l:'أرحاء ثالثة'},
+        ].map(i=>(
+          <span key={i.n} className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-white/10"><span className="w-2 h-2 rounded-full" style={{background:i.c}}></span>{i.n}: {i.l}</span>
+        ))}
       </div>
+      <div className="mt-2 text-center text-[10px] text-slate-500">الأرقام الكبيرة الملونة: 1-8 (مثل صورتك) - الأرقام الصغيرة فوق: ترقيم FDI العالمي 11-48</div>
     </div>
   );
 }
+
 
 
 function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
@@ -555,4 +577,4 @@ export default function App() {
       </div>
     </div>
   );
-        }
+}
