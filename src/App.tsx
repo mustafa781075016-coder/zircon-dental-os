@@ -1,4 +1,3 @@
-```tsx
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -107,7 +106,7 @@ function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick:
     return (
       <div className="relative w-full h-[320px] md:h-[360px] mx-auto max-w-[380px]">
         {/* قوس خلفي خفيف */}
-        <div className={`absolute left-1/2 -translate-x-1/2 w-[88%] h-[85%] border-[1.5px] border-white/10 rounded-[50%] ${isUpper ? 'top-[8%] rounded-b-none border-b-0' : 'bottom-[8%] rounded-t-none border-t-0'} pointer-events-none`} />
+        <div className={isUpper ? 'absolute left-1/2 -translate-x-1/2 w-[88%] h-[85%] border-[1.5px] border-white/10 rounded-[50%] top-[8%] rounded-b-none border-b-0 pointer-events-none' : 'absolute left-1/2 -translate-x-1/2 w-[88%] h-[85%] border-[1.5px] border-white/10 rounded-[50%] bottom-[8%] rounded-t-none border-t-0 pointer-events-none'} />
         
         {teeth.map((n, idx) => {
           const total = teeth.length;
@@ -556,5 +555,4 @@ export default function App() {
       </div>
     </div>
   );
-}
-```
+        }
