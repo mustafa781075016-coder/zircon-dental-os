@@ -88,6 +88,7 @@ function Login({ onLogin }: { onLogin: (user:any)=>void }) {
   );
 }
 
+/* ====== TEETH CHART ====== */
 const TEETH_UPPER = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
 const TEETH_LOWER = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
 const TOOTH_COLORS: any = { 1:'#e06a6a', 2:'#b78a4a', 3:'#2ea86a', 4:'#3a8ab5', 5:'#6b4c9a', 6:'#d16a8a', 7:'#a3b82a', 8:'#7a8a2e' };
@@ -114,8 +115,9 @@ function ToothShape({ num, has, onClick }: { num: number, has: boolean, onClick:
   );
 }
 
-function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick: (n:number)=>void }) {
+function ToothChart({ implants, onToothClick, selectedTeeth }: { implants: any[], onToothClick: (n:number)=>void, selectedTeeth?: number[] }) {
   const implanted = new Set(implants.map((i:any)=>i.tooth_number));
+  const selectedSet = new Set(selectedTeeth || []);
   const Arch = ({ teeth, isUpper }: { teeth: number[], isUpper: boolean }) => (
     <div className="relative w-full h-[440px] md:h-[480px] mx-auto max-w-[420px]">
       <div className={`absolute left-1/2 -translate-x-1/2 w-[92%] h-[92%] border border-white/10 rounded-[50%] pointer-events-none ${isUpper ? 'top-[4%] rounded-b-none border-b-0' : 'bottom-[4%] rounded-t-none border-t-0'}`} />
@@ -124,9 +126,12 @@ function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick:
         const rad = (angle * Math.PI) / 180;
         const x = 50 + 43 * Math.cos(rad);
         const y = (isUpper ? 80 : 20) + 54 * Math.sin(rad);
+        const isSelected = selectedSet.has(n);
         return (
           <div key={n} style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }} className="absolute w-[44px] h-[52px] md:w-[48px] md:h-[56px]">
-            <ToothShape num={n} has={implanted.has(n)} onClick={() => onToothClick(n)} />
+            <div className={isSelected ? 'ring-4 ring-blue-400 rounded-lg' : ''}>
+              <ToothShape num={n} has={implanted.has(n)} onClick={() => onToothClick(n)} />
+            </div>
           </div>
         );
       })}
@@ -304,29 +309,24 @@ function DiseaseLog(){
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center"><h2 className="text-xl font-bold text-white">سجل الأمراض</h2><button onClick={loadRecords} className={btnGhost}><Loader2 size={14} className={loading?'animate-spin':''}/> تحديث</button></div>
-      <div className="flex gap-2 border-b border-white/10">
-        {[{id:'treatments',label:'سجل المعالجات'},{id:'medical',label:'الملف الطبي'},{id:'finance',label:'سند حساب'}].map(t=><button key={t.id} onClick={()=>setActiveSub(t.id)} className={`px-4 py-2 text-sm border-b-2 ${activeSub===t.id?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>{t.label}</button>)}
-      </div>
-      {loading ? <div className={card + ' text-center text-slate-400'}>جاري التحميل...</div> : (
-        <div className={card + ' !p-0 overflow-hidden'}>
-          <div className="p-4 font-bold text-white">سجل المعالجات - {records.length} سجل</div>
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">المعالجة</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">السعر</th><th className="text-right px-4 py-3">السن</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">التاريخ</th></tr></thead>
-              <tbody className="divide-y divide-white/5">
-                {records.map((r:any)=><tr key={r.id} className="hover:bg-white/5">
-                  <td className="px-4 py-2 text-white">{r.treatment_type}</td>
-                  <td className="px-4 py-2 text-slate-300">{r.doctor_name||'—'}</td>
-                  <td className="px-4 py-2 text-emerald-400">{r.cost} ر.س</td>
-                  <td className="px-4 py-2 text-emerald-300">🦷 {r.tooth_number}</td>
-                  <td className="px-4 py-2 text-slate-300">{r.patient?.full_name}</td>
-                  <td className="px-4 py-2 text-slate-500 text-xs">{fmtDate(r.treatment_date || r.created_at)}</td>
-                </tr>)}
-              </tbody>
-            </table>
-          </div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <div className="p-4 font-bold text-white">سجل المعالجات - {records.length}</div>
+        <div className="overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">المعالجة</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">السعر</th><th className="text-right px-4 py-3">السن</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">التاريخ</th></tr></thead>
+            <tbody className="divide-y divide-white/5">
+              {records.map((r:any)=><tr key={r.id} className="hover:bg-white/5">
+                <td className="px-4 py-2 text-white">{r.treatment_type}</td>
+                <td className="px-4 py-2 text-slate-300">{r.doctor_name||'—'}</td>
+                <td className="px-4 py-2 text-emerald-400">{r.cost} ر.س</td>
+                <td className="px-4 py-2 text-emerald-300">🦷 {r.tooth_number}</td>
+                <td className="px-4 py-2 text-slate-300">{r.patient?.full_name}</td>
+                <td className="px-4 py-2 text-slate-500 text-xs">{fmtDate(r.treatment_date || r.created_at)}</td>
+              </tr>)}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -470,7 +470,7 @@ function ReceptionDashboard({ setPage }: any) {
     if (w) { w.document.write(html); w.document.close(); setTimeout(() => { for (let i = 0; i < printCopies; i++) w.print(); }, 400); }
   }
   function openWhatsApp(c: any) { const msg = `مرحباً ${c.name}\nرقم بطاقة المعاينة: #${c.cardNumber}\n${recSettings.clinicName}\nنتشرف بخدمتكم 🌟`; window.open(`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank'); }
-  function sendSMS(c: any) { alert(`سيتم إرسال SMS إلى ${c.phone}\n\nرقم بطاقتك: #${c.cardNumber}\n${recSettings.clinicName}`); }
+  function sendSMS(c: any) { alert(`سيتم إرسال SMS إلى ${c.phone}\n\nرقم بطاقتك: #${c.cardNumber}`); }
 
   const filtered = cards.filter((c: any) => {
     const matchName = !searchName || (c.name || '').includes(searchName);
@@ -655,7 +655,594 @@ function SessionBooking({ setPage }: any) {
     </div>
   );
 }
-/* ============ DASHBOARD ============ */
+/* ============ DOCTOR DASHBOARD ============ */
+const LS_DOCTOR_TREATMENTS = 'zircon.doctorTreatments.v1';
+const LS_PRESCRIPTIONS = 'zircon.prescriptions.v1';
+
+function DoctorDashboard({ setPage, setActivePatient }: any) {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [currentDoctor, setCurrentDoctor] = useState('');
+  const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [refresh, setRefresh] = useState(0);
+
+  useEffect(() => {
+    try { setSessions(JSON.parse(localStorage.getItem('zircon_sessions') || '[]')); } catch {}
+    try { setCards(JSON.parse(localStorage.getItem('zircon_visitCards') || '[]')); } catch {}
+    try { setDoctors(JSON.parse(localStorage.getItem('zircon_doctors') || '[]')); } catch {}
+    try {
+      const u = JSON.parse(localStorage.getItem('zircon_currentUser') || 'null');
+      if (u?.doctorName) setCurrentDoctor(u.doctorName);
+    } catch {}
+  }, [refresh]);
+
+  function findCard(s: any) { return cards.find((c: any) => c.cardNumber === s.cardNumber || c.name === s.patientName); }
+
+  function enterPatient(s: any) {
+    const card = findCard(s);
+    setActivePatient({
+      cardNumber: s.cardNumber, name: s.patientName, doctor: s.doctor,
+      phone: card?.phone || '', age: card?.age || '', gender: card?.gender || '',
+      sessionId: s.id, sessionDate: s.date,
+    });
+    setPage('treatment-screen');
+  }
+
+  function postponeSession(s: any) {
+    if (!confirm(`تأجيل موعد ${s.patientName}؟`)) return;
+    const newDate = prompt('التاريخ الجديد (YYYY-MM-DD):', s.date) || s.date;
+    const updated = sessions.map((x: any) => x.id === s.id ? { ...x, date: newDate } : x);
+    localStorage.setItem('zircon_sessions', JSON.stringify(updated));
+    setSessions(updated);
+    alert('تم التأجيل');
+  }
+
+  function cancelSession(s: any) {
+    if (!confirm(`إلغاء موعد ${s.patientName} نهائياً؟`)) return;
+    const updated = sessions.filter((x: any) => x.id !== s.id);
+    localStorage.setItem('zircon_sessions', JSON.stringify(updated));
+    setSessions(updated);
+    alert('تم الإلغاء');
+  }
+
+  const daySessions = sessions.filter((s: any) => s.date === selectedDate && (!currentDoctor || s.doctor === currentDoctor));
+
+  const Icons = [
+    { icon: '📋', label: 'بطاقة معاينة', action: () => setPage('doctor-cards'), tone: 'from-blue-500/20 to-indigo-700/10 border-blue-500/30' },
+    { icon: '🦷', label: 'المعالجة', action: () => alert('اختر مريضاً من القائمة بالدخول'), tone: 'from-emerald-500/20 to-teal-700/10 border-emerald-500/30' },
+    { icon: '📊', label: 'قائمة المعالجات', action: () => setPage('doctor-treatments-list'), tone: 'from-purple-500/20 to-violet-700/10 border-purple-500/30' },
+    { icon: '💊', label: 'قائمة الأدوية', action: () => setPage('medicines-list'), tone: 'from-amber-500/20 to-orange-700/10 border-amber-500/30' },
+    { icon: '📅', label: 'قائمة المواعيد', action: () => setPage('doctor-appointments'), tone: 'from-cyan-500/20 to-blue-700/10 border-cyan-500/30' },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-blue-600/20 to-indigo-700/10 p-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2"><Stethoscope size={24} className="text-blue-400"/> لوحة تحكم الطبيب</h2>
+            <p className="text-slate-300 text-xs mt-1">مرحباً د. {currentDoctor || 'الطبيب'} — {daySessions.length} مريض في قائمة اليوم</p>
+          </div>
+          <div className="flex gap-2 items-center">
+            <label className="text-xs text-slate-300">التاريخ:</label>
+            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-sm text-white" />
+            <button onClick={() => setRefresh(r => r + 1)} className="rounded-xl bg-white/10 hover:bg-white/20 text-white p-2"><RefreshCw size={16}/></button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {Icons.map((ic, i) => (
+          <button key={i} onClick={ic.action} className={'rounded-2xl border bg-gradient-to-br p-5 text-center hover:scale-[1.02] transition ' + ic.tone}>
+            <div className="text-4xl mb-2">{ic.icon}</div>
+            <div className="text-sm font-bold text-white">{ic.label}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <div className="p-4 border-b border-white/10 flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-bold text-white flex items-center gap-2"><Users size={18} className="text-cyan-400"/> قائمة الانتظار - {daySessions.length}</h3>
+          <span className="text-xs text-slate-400">محتوى اليوم {selectedDate}</span>
+        </div>
+        <div className="overflow-auto">
+          <table className="w-full text-sm min-w-[800px]">
+            <thead className="bg-white/5 text-slate-400 text-xs">
+              <tr>
+                <th className="text-right px-4 py-3">رقم البطاقة</th>
+                <th className="text-right px-4 py-3">اسم المريض</th>
+                <th className="text-right px-4 py-3">تاريخ الموعد</th>
+                <th className="text-right px-4 py-3">الطبيب المعالج</th>
+                <th className="text-right px-4 py-3">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {daySessions.length === 0 ? (
+                <tr><td colSpan={5} className="p-8 text-center text-slate-500"><div className="text-4xl mb-2">⏳</div>لا يوجد مرضى في قائمة الانتظار</td></tr>
+              ) : daySessions.map((s: any) => (
+                <tr key={s.id} className="hover:bg-white/5">
+                  <td className="px-4 py-3 font-mono text-blue-300 text-xs" dir="ltr">#{s.cardNumber}</td>
+                  <td className="px-4 py-3 text-white font-medium">{s.patientName}</td>
+                  <td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{s.date}</td>
+                  <td className="px-4 py-3 text-slate-300 text-xs">{s.doctor}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button onClick={() => enterPatient(s)} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1"><Check size={14}/> دخول</button>
+                      <button onClick={() => postponeSession(s)} className="px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 text-xs">تأجيل</button>
+                      <button onClick={() => cancelSession(s)} className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-300"><X size={14}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ DOCTOR CARDS VIEW ============ */
+function DoctorCardsView({ setPage }: any) {
+  const [cards, setCards] = useState<any[]>([]);
+  const [search, setSearch] = useState('');
+  useEffect(() => { try { setCards(JSON.parse(localStorage.getItem('zircon_visitCards') || '[]')); } catch {} }, []);
+  const filtered = cards.filter((c: any) => !search || (c.name || '').includes(search) || (c.cardNumber || '').includes(search) || (c.phone || '').includes(search));
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">بطاقات المعاينة</h2></div>
+      <div className="relative"><Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث..." className={inp + ' pr-10'} /></div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map((c: any) => (
+          <div key={c.cardNumber} className={card}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-2xl font-mono font-bold text-blue-400" dir="ltr">#{c.cardNumber}</div>
+              <div className={`text-xs px-2 py-1 rounded ${c.completed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{c.completed ? 'مكتمل' : 'جاري'}</div>
+            </div>
+            <div className="text-white font-bold">{c.name}</div>
+            <div className="text-xs text-slate-400 mt-1">العمر: {c.age || '—'} | {c.gender}</div>
+            <div className="text-xs text-slate-300 mt-1" dir="ltr">📞 {c.phone}</div>
+            <div className="text-xs text-slate-400 mt-1">الطبيب: {c.doctor || '—'}</div>
+          </div>
+        ))}
+        {filtered.length === 0 && <div className={card + ' col-span-full text-center text-slate-400'}>لا توجد بطاقات</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ============ TREATMENTS LIST ============ */
+function DoctorTreatmentsList({ setPage }: any) {
+  const [items, setItems] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem('zircon_treatTypes') || '[{"id":"1","name":"حشو ضوئي","price":2000},{"id":"2","name":"خلع سن","price":1500},{"id":"3","name":"تركيب زيركون","price":8000},{"id":"4","name":"تنظيف جير","price":2000},{"id":"5","name":"علاج عصب","price":5000},{"id":"6","name":"زراعة سن","price":35000}]'); } catch { return []; } });
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">قائمة المعالجات والأسعار</h2></div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <table className="w-full text-sm">
+          <thead className="bg-white/5 text-slate-400 text-xs">
+            <tr><th className="text-right px-4 py-3">#</th><th className="text-right px-4 py-3">اسم المعالجة</th><th className="text-right px-4 py-3">السعر (ر.س)</th></tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {items.map((it: any, i: number) => (
+              <tr key={it.id} className="hover:bg-white/5">
+                <td className="px-4 py-3 text-slate-400">{i + 1}</td>
+                <td className="px-4 py-3 text-white font-medium">{it.name}</td>
+                <td className="px-4 py-3 text-emerald-400 font-bold" dir="ltr">{Number(it.price).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ============ MEDICINES LIST ============ */
+function MedicinesList({ setPage }: any) {
+  const [items, setItems] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem(LS_PRESCRIPTIONS) || '[]'); } catch { return []; } });
+  const [form, setForm] = useState({ name: '', dosage: '', frequency: '', duration: '', notes: '' });
+  useEffect(() => { localStorage.setItem(LS_PRESCRIPTIONS, JSON.stringify(items)); }, [items]);
+  const defaults = [
+    { id: '1', name: 'أموكسيسيلين 500mg', dosage: 'كبسولة', frequency: '3 مرات يومياً', duration: '5 أيام', notes: 'بعد الأكل' },
+    { id: '2', name: 'باراسيتامول 500mg', dosage: 'قرص', frequency: 'عند الحاجة', duration: '3 أيام', notes: 'للألم' },
+    { id: '3', name: 'إيبوبروفين 400mg', dosage: 'قرص', frequency: 'كل 8 ساعات', duration: '3 أيام', notes: 'بعد الأكل' },
+    { id: '4', name: 'كلورهيكسيدين غسول', dosage: '10ml', frequency: 'مرتين يومياً', duration: '7 أيام', notes: 'مضمضة' },
+    { id: '5', name: 'ميترونيدازول 250mg', dosage: 'قرص', frequency: '3 مرات يومياً', duration: '5 أيام', notes: 'مع الطعام' },
+  ];
+  const allItems = items.length > 0 ? items : defaults;
+  function addItem() { if (!form.name.trim()) return; setItems([...items.length > 0 ? items : defaults, { ...form, id: Date.now().toString() }]); setForm({ name: '', dosage: '', frequency: '', duration: '', notes: '' }); }
+  function delItem(id: string) { setItems((items.length > 0 ? items : defaults).filter((x: any) => x.id !== id)); }
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">قائمة الأدوية</h2></div>
+
+      <div className={card}>
+        <h3 className="font-bold text-white mb-3">إضافة دواء</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div className="md:col-span-2"><label className={label}>الاسم *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inp} /></div>
+          <div><label className={label}>الجرعة</label><input value={form.dosage} onChange={e => setForm({ ...form, dosage: e.target.value })} className={inp} /></div>
+          <div><label className={label}>التكرار</label><input value={form.frequency} onChange={e => setForm({ ...form, frequency: e.target.value })} className={inp} /></div>
+          <div><label className={label}>المدة</label><input value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} className={inp} /></div>
+        </div>
+        <div className="mt-2 flex gap-2">
+          <input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="ملاحظات" className={inp + ' !w-96'} />
+          <button onClick={addItem} className={btnSm}><Plus size={16}/> إضافة</button>
+        </div>
+      </div>
+
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <table className="w-full text-sm min-w-[700px]">
+          <thead className="bg-white/5 text-slate-400 text-xs">
+            <tr><th className="text-right px-4 py-3">الدواء</th><th className="text-right px-4 py-3">الجرعة</th><th className="text-right px-4 py-3">التكرار</th><th className="text-right px-4 py-3">المدة</th><th className="text-right px-4 py-3">ملاحظات</th><th></th></tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {allItems.map((m: any) => (
+              <tr key={m.id} className="hover:bg-white/5">
+                <td className="px-4 py-3 text-white font-medium">{m.name}</td>
+                <td className="px-4 py-3 text-slate-300">{m.dosage || '—'}</td>
+                <td className="px-4 py-3 text-slate-300">{m.frequency || '—'}</td>
+                <td className="px-4 py-3 text-slate-300">{m.duration || '—'}</td>
+                <td className="px-4 py-3 text-slate-400 text-xs">{m.notes || '—'}</td>
+                <td className="px-4 py-3"><button onClick={() => delItem(m.id)} className="text-red-400"><Trash2 size={14}/></button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ============ DOCTOR APPOINTMENTS ============ */
+function DoctorAppointments({ setPage }: any) {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+  useEffect(() => {
+    try { setSessions(JSON.parse(localStorage.getItem('zircon_sessions') || '[]')); } catch {}
+    try { setCards(JSON.parse(localStorage.getItem('zircon_visitCards') || '[]')); } catch {}
+  }, []);
+  const sorted = [...sessions].sort((a: any, b: any) => (a.date || '').localeCompare(b.date || ''));
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">قائمة المواعيد</h2></div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <table className="w-full text-sm min-w-[700px]">
+          <thead className="bg-white/5 text-slate-400 text-xs">
+            <tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">البطاقة</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">الجوال</th></tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {sorted.length === 0 ? <tr><td colSpan={5} className="p-6 text-center text-slate-500">لا توجد مواعيد</td></tr> :
+              sorted.map((s: any) => {
+                const card = cards.find((c: any) => c.cardNumber === s.cardNumber);
+                return (
+                  <tr key={s.id} className="hover:bg-white/5">
+                    <td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{s.date}</td>
+                    <td className="px-4 py-3 font-mono text-blue-300 text-xs" dir="ltr">#{s.cardNumber}</td>
+                    <td className="px-4 py-3 text-white">{s.patientName}</td>
+                    <td className="px-4 py-3 text-slate-300 text-xs">{s.doctor}</td>
+                    <td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{card?.phone || '—'}</td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ============ TREATMENT SCREEN (أهم شاشة) ============ */
+function TreatmentScreen({ activePatient, setPage }: any) {
+  const [patient, setPatient] = useState<any>(activePatient || null);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [treatTypes, setTreatTypes] = useState<any[]>([]);
+  const [medicines, setMedicines] = useState<any[]>([]);
+  const [allTreatments, setAllTreatments] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem(LS_DOCTOR_TREATMENTS) || '[]'); } catch { return []; } });
+  const [currentForm, setCurrentForm] = useState<any>({
+    treatType: '', cost: 0, discount: 0, discountType: 'amount', discountRatio: '',
+    diagnosis: '', teeth: [] as number[], medicine: '', sessionDate: TODAY, notes: '', status: 'planned',
+  });
+  const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
+  const [showJawModal, setShowJawModal] = useState(false);
+  const [showMedicineModal, setShowMedicineModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportType, setReportType] = useState('general');
+  const [searchTreatment, setSearchTreatment] = useState('');
+  const [filterView, setFilterView] = useState('all');
+  const [filterTime, setFilterTime] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  useEffect(() => {
+    try { setDoctors(JSON.parse(localStorage.getItem('zircon_doctors') || '[]')); } catch {}
+    try { setTreatTypes(JSON.parse(localStorage.getItem('zircon_treatTypes') || '[{"id":"1","name":"حشو ضوئي","price":2000},{"id":"2","name":"خلع سن","price":1500},{"id":"3","name":"تركيب زيركون","price":8000},{"id":"4","name":"تنظيف جير","price":2000},{"id":"5","name":"علاج عصب","price":5000}]')); } catch {}
+    try { setMedicines(JSON.parse(localStorage.getItem(LS_PRESCRIPTIONS) || '[]')); } catch {}
+  }, []);
+
+  useEffect(() => { localStorage.setItem(LS_DOCTOR_TREATMENTS, JSON.stringify(allTreatments)); }, [allTreatments]);
+
+  if (!patient) return (
+    <div className="space-y-4">
+      <button onClick={() => setPage('dashboard')} className={btnGhost}><ArrowRight size={18}/> رجوع</button>
+      <div className={card + ' text-center text-slate-400 py-12'}>لم يتم اختيار مريض. الرجاء الدخول من قائمة الانتظار.</div>
+    </div>
+  );
+
+  const doctorName = patient.doctor || 'د. الطبيب';
+
+  function saveTreatment() {
+    if (!currentForm.treatType || currentForm.teeth.length === 0) { alert('اختر نوع المعالجة والأسنان'); return; }
+    const newT: any = {
+      id: Date.now().toString(),
+      patientId: patient.cardNumber,
+      patientName: patient.name,
+      doctorName: doctorName,
+      treatmentType: currentForm.treatType,
+      cost: Number(currentForm.cost),
+      discount: Number(currentForm.discount),
+      discountType: currentForm.discountType,
+      discountRatio: currentForm.discountRatio,
+      diagnosis: currentForm.diagnosis,
+      teeth: currentForm.teeth,
+      medicine: currentForm.medicine,
+      date: currentForm.sessionDate,
+      notes: currentForm.notes,
+      completed: false,
+      stopped: false,
+      status: 'planned',
+      createdAt: new Date().toISOString(),
+    };
+    setAllTreatments([newT, ...allTreatments]);
+    alert('✓ تم حفظ المعالجة');
+    setCurrentForm({ treatType: '', cost: 0, discount: 0, discountType: 'amount', discountRatio: '', diagnosis: '', teeth: [], medicine: '', sessionDate: TODAY, notes: '', status: 'planned' });
+  }
+
+  function completeTreatment(t: any) {
+    setAllTreatments(allTreatments.map((x: any) => x.id === t.id ? { ...x, completed: true, status: 'completed' } : x));
+    alert('✓ تم إكمال المعالجة');
+  }
+
+  function stopTreatment(t: any) {
+    setAllTreatments(allTreatments.map((x: any) => x.id === t.id ? { ...x, stopped: true } : x));
+  }
+
+  function editTreatment(t: any) {
+    setCurrentForm({
+      treatType: t.treatmentType, cost: t.cost, discount: t.discount, discountType: t.discountType,
+      discountRatio: t.discountRatio, diagnosis: t.diagnosis, teeth: t.teeth, medicine: t.medicine,
+      sessionDate: t.date, notes: t.notes, status: t.status,
+    });
+  }
+
+  function deleteTreatment(t: any) {
+    if (!confirm('حذف المعالجة؟')) return;
+    setAllTreatments(allTreatments.filter((x: any) => x.id !== t.id));
+  }
+
+  function transferToAccounts() {
+    const patientT = allTreatments.filter((t: any) => t.patientId === patient.cardNumber && t.completed);
+    if (patientT.length === 0) { alert('لا توجد معالجات مكتملة للترحيل'); return; }
+    try {
+      const existing = JSON.parse(localStorage.getItem('zircon_accountsPending') || '[]');
+      const merged = [...existing, ...patientT.filter((t: any) => !existing.find((e: any) => e.id === t.id))];
+      localStorage.setItem('zircon_accountsPending', JSON.stringify(merged));
+      alert(`✓ تم ترحيل ${patientT.length} معالجة للحسابات`);
+    } catch {}
+  }
+
+  function undoLast() { if (allTreatments.length === 0) { alert('لا يوجد شي للتراجع'); return; } setAllTreatments(allTreatments.slice(1)); }
+
+  function printPriceQuote(detailed: boolean) {
+    const teethList = currentForm.teeth.join(', ');
+    const total = Number(currentForm.cost) - Number(currentForm.discount);
+    const html = `<html dir="rtl"><head><title>عرض سعر</title><style>body{font-family:Cairo,Arial,sans-serif;padding:30px;background:#fff;color:#000}h1{text-align:center;font-size:22px;border-bottom:2px solid #000;padding-bottom:10px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #999;padding:8px;text-align:right}th{background:#eee}.total{font-size:18px;font-weight:bold;color:#0066cc;margin-top:15px;text-align:left}</style></head><body>
+    <h1>عرض سعر معالجة</h1>
+    <p><b>المريض:</b> ${patient.name} | <b>رقم البطاقة:</b> #${patient.cardNumber}</p>
+    <p><b>الطبيب:</b> ${doctorName} | <b>التاريخ:</b> ${currentForm.sessionDate}</p>
+    <table><thead><tr><th>المعالجة</th><th>الأسنان</th><th>السعر</th></tr></thead><tbody>
+    <tr><td>${currentForm.treatType}</td><td>${teethList}</td><td>${currentForm.cost}</td></tr>
+    ${detailed && currentForm.diagnosis ? `<tr><td colspan="3"><b>التشخيص:</b> ${currentForm.diagnosis}</td></tr>` : ''}
+    </tbody></table>
+    ${Number(currentForm.discount) > 0 ? `<p>الخصم: ${currentForm.discount}</p>` : ''}
+    <div class="total">الإجمالي: ${total} ر.س</div>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
+  }
+
+  function printReport() {
+    const patientT = allTreatments.filter((t: any) => t.patientId === patient.cardNumber);
+    const rows = patientT.map((t: any) => `<tr><td>${t.treatmentType}</td><td>${t.doctorName}</td><td>${t.cost}</td><td>${t.teeth.join(',')}</td><td>${t.date}</td></tr>`).join('');
+    const html = `<html dir="rtl"><head><title>تقرير معالجات</title><style>body{font-family:Cairo,Arial,sans-serif;padding:30px;background:#fff;color:#000}h1{text-align:center;border-bottom:2px solid #000;padding-bottom:10px}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:12px}th,td{border:1px solid #999;padding:6px;text-align:right}th{background:#eee}</style></head><body>
+    <h1>تقرير معالجات - ${reportType === 'general' ? 'عام' : reportType === 'detailed' ? 'تفصيلي' : 'جدولي'}</h1>
+    <p><b>المريض:</b> ${patient.name} | #${patient.cardNumber} | <b>الطبيب:</b> ${doctorName}</p>
+    <table><thead><tr><th>المعالجة</th><th>الطبيب</th><th>التكلفة</th><th>الأسنان</th><th>التاريخ</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
+  }
+
+  const patientTreatments = allTreatments.filter((t: any) => t.patientId === patient.cardNumber);
+  const filteredTreatments = patientTreatments.filter((t: any) => {
+    if (filterView === 'stopped' && !t.stopped) return false;
+    if (filterView === 'completed' && !t.completed) return false;
+    if (filterStatus === 'completed' && !t.completed) return false;
+    if (filterStatus === 'incomplete' && t.completed) return false;
+    if (searchTreatment && !t.treatmentType.includes(searchTreatment)) return false;
+    return true;
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Top buttons */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <button onClick={() => setPage('dashboard')} className={btnGhost}><ArrowRight size={16}/> رجوع</button>
+        <button onClick={() => setCurrentForm({ ...currentForm, treatType: '', cost: 0, teeth: [], diagnosis: '', medicine: '', notes: '' })} className="rounded-xl bg-red-600/80 hover:bg-red-600 text-white px-3 py-2 text-xs">✕ إلغاء معالجة</button>
+        <button onClick={() => setShowSessionModal(true)} className="rounded-xl bg-cyan-600/80 hover:bg-cyan-600 text-white px-3 py-2 text-xs">+ إضافة جلسة</button>
+        <button onClick={saveTreatment} className={btnSm + ' !text-xs'}><Save size={14}/> حفظ معالجة</button>
+        <button onClick={() => editTreatment(filteredTreatments[0])} disabled={filteredTreatments.length === 0} className="rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white px-3 py-2 text-xs disabled:opacity-40">تعديل معالجة</button>
+        <button onClick={undoLast} className="rounded-xl bg-amber-600/80 hover:bg-amber-600 text-white px-3 py-2 text-xs">↶ التراجع</button>
+        <button onClick={() => printPriceQuote(false)} className="rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white px-3 py-2 text-xs">عرض سعر عام</button>
+        <button onClick={() => printPriceQuote(true)} className="rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white px-3 py-2 text-xs">عرض سعر الحالة</button>
+        <button onClick={() => { setReportType('general'); setShowReportModal(true); }} className="rounded-xl bg-slate-600/80 hover:bg-slate-600 text-white px-3 py-2 text-xs">تقرير</button>
+      </div>
+
+      {/* Patient Header */}
+      <div className={card}>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div><div className="text-xs text-slate-400">المريض</div><div className="text-white font-bold mt-1">{patient.name}</div><div className="text-xs text-blue-300 font-mono" dir="ltr">#{patient.cardNumber}</div></div>
+          <div><div className="text-xs text-slate-400">رقم المعاينة</div><div className="text-white font-mono mt-1" dir="ltr">#{patient.cardNumber}</div></div>
+          <div><div className="text-xs text-slate-400">الطبيب المعالج</div><div className="text-white mt-1">{doctorName}</div></div>
+        </div>
+      </div>
+
+      {/* Current Treatment Form */}
+      <div className={card}>
+        <h3 className="font-bold text-white mb-4">بيانات المعالجة الحالية</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className={label}>نوع المعالجة *</label>
+            <select value={currentForm.treatType} onChange={e => {
+              const t = treatTypes.find((x: any) => x.name === e.target.value);
+              setCurrentForm({ ...currentForm, treatType: e.target.value, cost: t?.price || 0 });
+            }} className={inp}>
+              <option value="">اختر المعالجة</option>
+              {treatTypes.map((t: any) => <option key={t.id} value={t.name}>{t.name}</option>)}
+            </select>
+          </div>
+          <div><label className={label}>تكلفة المعالجة</label><input type="number" value={currentForm.cost} onChange={e => setCurrentForm({ ...currentForm, cost: Number(e.target.value) })} className={inp} /></div>
+          <div><label className={label}>تاريخ المعالجة</label><input type="date" value={currentForm.sessionDate} onChange={e => setCurrentForm({ ...currentForm, sessionDate: e.target.value })} className={inp} /></div>
+          <div><label className={label}>الخصم (مبلغ)</label><input type="number" value={currentForm.discount} onChange={e => setCurrentForm({ ...currentForm, discount: Number(e.target.value), discountType: 'amount' })} className={inp} /></div>
+          <div><label className={label}>نسبة العيادة / الطبيب</label><input value={currentForm.discountRatio} onChange={e => setCurrentForm({ ...currentForm, discountRatio: e.target.value })} placeholder="مثال: 67 / 50" className={inp} /></div>
+          <div><label className={label}>التشخيص + صورة السن</label>
+            <button onClick={() => setShowDiagnosisModal(true)} className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-xs text-white hover:bg-white/10 flex items-center justify-center gap-2">
+              📝 {currentForm.diagnosis ? currentForm.diagnosis.slice(0, 30) : 'كتابة التشخيص'}
+            </button>
+          </div>
+          <div><label className={label}>قائمة الأسنان *</label>
+            <button onClick={() => setShowJawModal(true)} className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-xs text-white hover:bg-white/10">
+              🦷 {currentForm.teeth.length > 0 ? `${currentForm.teeth.length} أسنان: ${currentForm.teeth.join(',')}` : 'اختر الأسنان'}
+            </button>
+          </div>
+          <div><label className={label}>الأدوية</label>
+            <select value={currentForm.medicine} onChange={e => setCurrentForm({ ...currentForm, medicine: e.target.value })} className={inp}>
+              <option value="">اختر دواء</option>
+              {medicines.map((m: any) => <option key={m.id} value={m.name}>{m.name} - {m.dosage}</option>)}
+            </select>
+          </div>
+          <div><label className={label}>ملاحظات</label><input value={currentForm.notes} onChange={e => setCurrentForm({ ...currentForm, notes: e.target.value })} className={inp} /></div>
+        </div>
+        <div className="mt-4 flex gap-2 flex-wrap">
+          <button onClick={saveTreatment} className={btnSm}><Save size={16}/> حفظ معالجة</button>
+          <button onClick={transferToAccounts} className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 text-sm flex items-center gap-2">💰 ترحيل إلى الحسابات</button>
+          <button onClick={() => alert('سيتم رفع ملف')} className={btnGhost}>📎 إضافة ملف للمريض</button>
+        </div>
+      </div>
+
+      {/* Patient's Previous Treatments */}
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <div className="p-3 border-b border-white/10 flex flex-wrap justify-between items-center gap-2">
+          <h3 className="font-bold text-white text-sm">سجل معالجات المريض - {filteredTreatments.length}</h3>
+          <input value={searchTreatment} onChange={e => setSearchTreatment(e.target.value)} placeholder="بحث..." className="rounded-xl bg-white/5 border border-white/10 px-3 py-1.5 text-xs w-40 text-white" />
+        </div>
+        <div className="overflow-auto">
+          <table className="w-full text-sm min-w-[900px]">
+            <thead className="bg-white/5 text-slate-400 text-xs">
+              <tr>
+                <th className="text-right px-3 py-3">المعالجة</th>
+                <th className="text-right px-3 py-3">الطبيب</th>
+                <th className="text-right px-3 py-3">التكلفة</th>
+                <th className="text-right px-3 py-3">السن</th>
+                <th className="text-right px-3 py-3">التاريخ</th>
+                <th className="text-right px-3 py-3">تمت</th>
+                <th className="text-right px-3 py-3">متوقفة</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filteredTreatments.length === 0 ? (
+                <tr><td colSpan={8} className="p-6 text-center text-slate-500">لا توجد معالجات</td></tr>
+              ) : filteredTreatments.map((t: any) => (
+                <tr key={t.id} className="hover:bg-white/5">
+                  <td className="px-3 py-2 text-white">{t.treatmentType}</td>
+                  <td className="px-3 py-2 text-slate-300">{t.doctorName}</td>
+                  <td className="px-3 py-2 text-emerald-400" dir="ltr">{t.cost}</td>
+                  <td className="px-3 py-2 text-emerald-300">🦷 {t.teeth.join(',')}</td>
+                  <td className="px-3 py-2 text-slate-400 text-xs" dir="ltr">{t.date}</td>
+                  <td className="px-3 py-2">
+                    <input type="checkbox" checked={t.completed} onChange={() => completeTreatment(t)} className="w-4 h-4" />
+                  </td>
+                  <td className="px-3 py-2">
+                    <input type="checkbox" checked={t.stopped} onChange={() => stopTreatment(t)} className="w-4 h-4" />
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex gap-1">
+                      <button onClick={() => editTreatment(t)} className="text-blue-400"><Edit3 size={14}/></button>
+                      <button onClick={() => deleteTreatment(t)} className="text-red-400"><Trash2 size={14}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="p-3 border-t border-white/10 flex flex-wrap gap-2 items-center">
+          <Filter size={14} className="text-slate-500"/>
+          <button onClick={() => setFilterView(filterView === 'stopped' ? 'all' : 'stopped')} className={'px-3 py-1.5 rounded-lg text-xs ' + (filterView === 'stopped' ? 'bg-amber-600 text-white' : 'bg-white/5 text-slate-300')}>عرض المتوقفة</button>
+          <button onClick={() => setFilterView(filterView === 'completed' ? 'all' : 'completed')} className={'px-3 py-1.5 rounded-lg text-xs ' + (filterView === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300')}>عرض المكتملة</button>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 text-xs text-white">
+            <option value="all">الكل</option><option value="completed">أكمل المعالجة</option><option value="incomplete">لم يكمل المعالجة</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Diagnosis Modal */}
+      {showDiagnosisModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
+            <h3 className="font-bold text-white">التشخيص</h3>
+            <textarea rows={4} value={currentForm.diagnosis} onChange={e => setCurrentForm({ ...currentForm, diagnosis: e.target.value })} className={inp} placeholder="اكتب التشخيص..." />
+            <div className="flex justify-end gap-2"><button onClick={() => setShowDiagnosisModal(false)} className={btnSm}>حفظ</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* Jaw Modal */}
+      {showJawModal && <JawModalBulk selected={currentForm.teeth} onToggle={(n) => { const has = currentForm.teeth.includes(n); setCurrentForm({ ...currentForm, teeth: has ? currentForm.teeth.filter((x: number) => x !== n) : [...currentForm.teeth, n] }); }} onClose={() => setShowJawModal(false)} treatName={currentForm.treatType} doctorName={doctorName} cost={currentForm.cost} />}
+
+      {/* Session Modal */}
+      {showSessionModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
+            <h3 className="font-bold text-white">إضافة جلسة جديدة</h3>
+            <label><span className={label}>التاريخ</span><input type="date" value={currentForm.sessionDate} onChange={e => setCurrentForm({ ...currentForm, sessionDate: e.target.value })} className={inp} /></label>
+            <label><span className={label}>ملاحظات</span><textarea rows={2} value={currentForm.notes} onChange={e => setCurrentForm({ ...currentForm, notes: e.target.value })} className={inp} /></label>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowSessionModal(false)} className={btnGhost}>إلغاء</button>
+              <button onClick={() => { saveTreatment(); setShowSessionModal(false); }} className={btnSm}><Save size={16}/> حفظ وإضافة جلسة</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
+            <h3 className="font-bold text-white">اختر نوع التقرير</h3>
+            {[{ id: 'general', lbl: 'تقرير معالجة عام' }, { id: 'detailed', lbl: 'تقرير تفصيلي' }, { id: 'table', lbl: 'تقرير جدولي' }].map((r) => (
+              <button key={r.id} onClick={() => { setReportType(r.id); printReport(); setShowReportModal(false); }} className="w-full rounded-xl bg-white/5 hover:bg-white/10 text-white p-3 text-right text-sm">{r.lbl}</button>
+            ))}
+            <button onClick={() => setShowReportModal(false)} className={btnGhost + ' w-full'}>إلغاء</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+/* ============ DASHBOARD (admin/doctor general) ============ */
 function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
   const [stats, setStats] = useState({ patients: 0, today: 0, surgeries: 0, implants: 0, followups: 0, unpaid: 0 });
   const [recent, setRecent] = useState<any[]>([]);
@@ -857,7 +1444,6 @@ function Surgeries({ setPage, setSelectedPatient }: any) {
   );
 }
 
-/* ============ APPOINTMENTS ============ */
 function Appointments({ setPage }: any) {
   const [list, setList] = useState<any[]>([]);
   useEffect(()=>{ (async()=>{ const {data}=await supabase.from('appointments').select('*, patient:patients(full_name)').order('scheduled_start',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
@@ -905,7 +1491,6 @@ function AppointmentForm({ onSave, onCancel }: any) {
   );
 }
 
-/* ============ SURGERY FORM ============ */
 function SurgeryForm({ onSave, onCancel }: any) {
   const [patients, setPatients] = useState<any[]>([]);
   const [patientId, setPatientId] = useState('');
@@ -931,7 +1516,6 @@ function SurgeryForm({ onSave, onCancel }: any) {
   );
 }
 
-/* ============ IMPLANT MODAL ============ */
 function ImplantModal({ surgeryId, patientId, initialTooth, onClose, onSave }: any) {
   const [form, setForm] = useState({ tooth_number: initialTooth||11, brand: 'Straumann', diameter_mm: '4.1', length_mm: '10', torque_ncm: '35', bone_density: 'D2' });
   const [loading, setLoading] = useState(false);
@@ -960,7 +1544,6 @@ function ImplantModal({ surgeryId, patientId, initialTooth, onClose, onSave }: a
   );
 }
 
-/* ============ IMPLANTS LIST ============ */
 function Implants() {
   const [list, setList] = useState<any[]>([]);
   useEffect(()=>{ supabase.from('implants').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100).then(({data})=>setList(data||[])); },[]);
@@ -974,7 +1557,6 @@ function Implants() {
   );
 }
 
-/* ============ REPORTS ============ */
 function Reports() {
   const [stats, setStats] = useState({ patients:0, surgeries:0, implants:0, treatments:0 });
   useEffect(()=>{ (async()=>{
@@ -1055,8 +1637,7 @@ function Marketing() {
         supabase.from('implants').select('id, created_at'),
       ]);
       setPatients(p.data || []);
-      const now = new Date();
-      const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const now = new Date(); const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
       setStats([
         { label: 'مرضى هذا الشهر', value: (p.data || []).filter((x: any) => new Date(x.created_at) >= mStart).length },
         { label: 'جراحات هذا الشهر', value: (surg.data || []).filter((x: any) => new Date(x.created_at) >= mStart).length },
@@ -1208,15 +1789,15 @@ function LeadModal({ onClose, onSave }: any) {
   );
 }
 
-/* ============ SETTINGS PAGE (main admin settings) ============ */
+/* ============ SETTINGS PAGE ============ */
 function SettingsPage(){
   const [settingsTab, setSettingsTab] = useState<'doctors'|'treatments'|'users'>('doctors');
   const [doctors, setDoctors] = useState<any[]>(()=>{ try{ return JSON.parse(localStorage.getItem('zircon_doctors')||'[{"id":"1","name":"د. أحمد الشطبي","specialty":"زراعة"},{"id":"2","name":"د. جلال الداعري","specialty":"تقويم"}]') }catch{ return [] } });
-  const [treatTypes, setTreatTypes] = useState<any[]>(()=>{ try{ return JSON.parse(localStorage.getItem('zircon_treatTypes')||'[{"id":"1","name":"حشوة تجميلية","price":500},{"id":"2","name":"زراعة سن","price":3500},{"id":"3","name":"تنظيف","price":200}]') }catch{ return [] } });
+  const [treatTypes, setTreatTypes] = useState<any[]>(()=>{ try{ return JSON.parse(localStorage.getItem('zircon_treatTypes')||'[{"id":"1","name":"حشو ضوئي","price":2000},{"id":"2","name":"خلع سن","price":1500},{"id":"3","name":"تركيب زيركون","price":8000},{"id":"4","name":"تنظيف جير","price":2000},{"id":"5","name":"علاج عصب","price":5000}]') }catch{ return [] } });
   const [appUsers, setAppUsers] = useState<any[]>(()=>{ try{ return JSON.parse(localStorage.getItem('zircon_appUsers')||'[{"id":"1","username":"admin","password":"123456","role":"مدير"}]') }catch{ return [] } });
   const [newDoc, setNewDoc] = useState({name:'', specialty:''});
   const [newTreat, setNewTreat] = useState({name:'', price:500});
-  const [newUser, setNewUser] = useState({username:'', password:'', role:'طبيب'});
+  const [newUser, setNewUser] = useState({username:'', password:'', role:'طبيب', doctorName:''});
   const [userSearch, setUserSearch] = useState('');
   const [editItem, setEditItem] = useState<any>(null);
   useEffect(()=>{ localStorage.setItem('zircon_doctors', JSON.stringify(doctors)) },[doctors]);
@@ -1225,38 +1806,48 @@ function SettingsPage(){
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold text-white">الاعدادات - Zircon OS V2</h2>
-      <div className={card + ' !p-4'}><p className="text-slate-400 text-sm">البريد: mustafa781075016@gmail.com</p></div>
       <div className={card + ' !p-4'}>
         <div className="flex gap-2 border-b border-white/10 overflow-auto">
           <button onClick={()=>setSettingsTab('doctors')} className={`px-4 py-2 text-sm border-b-2 whitespace-nowrap ${settingsTab==='doctors'?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>إدارة الأطباء</button>
           <button onClick={()=>setSettingsTab('treatments')} className={`px-4 py-2 text-sm border-b-2 whitespace-nowrap ${settingsTab==='treatments'?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>إدارة المعالجات</button>
-        </div>
-        <div className="mt-3 flex">
-          <button onClick={()=>setSettingsTab('users')} className={`w-full md:w-auto px-6 py-2.5 rounded-xl text-sm font-bold border flex items-center justify-center gap-2 ${settingsTab==='users'?'bg-gradient-to-l from-violet-600 to-blue-600 border-violet-500 text-white':'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}`}><UserPlus size={16}/> إضافة مستخدم</button>
+          <button onClick={()=>setSettingsTab('users')} className={`px-4 py-2 text-sm border-b-2 whitespace-nowrap ${settingsTab==='users'?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>المستخدمون</button>
         </div>
         {settingsTab==='doctors' && (
           <div className="mt-5 space-y-4">
             <div className="grid md:grid-cols-3 gap-3"><div><label className={label}>اسم الطبيب</label><input value={newDoc.name} onChange={e=>setNewDoc({...newDoc,name:e.target.value})} className={inp}/></div><div><label className={label}>التخصص</label><input value={newDoc.specialty} onChange={e=>setNewDoc({...newDoc,specialty:e.target.value})} className={inp}/></div><div className="flex items-end"><button onClick={()=>{ if(!newDoc.name) return; setDoctors([...doctors,{id:Date.now().toString(),...newDoc}]); setNewDoc({name:'',specialty:''}) }} className={btnSm}><Plus size={16}/> إضافة</button></div></div>
-            <div className="space-y-2">{doctors.map((d:any)=><div key={d.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5"><span className="text-white text-sm">{d.name} - {d.specialty}</span><div className="flex gap-2"><button onClick={()=>setEditItem({type:'doc',data:d})} className="text-blue-400"><Edit3 size={14}/></button><button onClick={()=>setDoctors(doctors.filter((x:any)=>x.id!==d.id))} className="text-red-400"><Trash2 size={14}/></button></div></div>)}</div>
+            <div className="space-y-2">{doctors.map((d:any)=><div key={d.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5"><span className="text-white text-sm">{d.name} - {d.specialty}</span><div className="flex gap-2"><button onClick={()=>setDoctors(doctors.filter((x:any)=>x.id!==d.id))} className="text-red-400"><Trash2 size={14}/></button></div></div>)}</div>
           </div>
         )}
         {settingsTab==='treatments' && (
           <div className="mt-5 space-y-4">
             <div className="grid md:grid-cols-3 gap-3"><div><label className={label}>اسم المعالجة</label><input value={newTreat.name} onChange={e=>setNewTreat({...newTreat,name:e.target.value})} className={inp}/></div><div><label className={label}>السعر</label><input type="number" value={newTreat.price} onChange={e=>setNewTreat({...newTreat,price:parseInt(e.target.value)||0})} className={inp}/></div><div className="flex items-end"><button onClick={()=>{ if(!newTreat.name) return; setTreatTypes([...treatTypes,{id:Date.now().toString(),...newTreat}]); setNewTreat({name:'',price:500}) }} className={btnSm}><Plus size={16}/> إضافة</button></div></div>
-            <div className="space-y-2">{treatTypes.map((t:any)=><div key={t.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5"><span className="text-white text-sm">{t.name} - {t.price} ر.س</span><div className="flex gap-2"><button onClick={()=>setEditItem({type:'treat',data:t})} className="text-blue-400"><Edit3 size={14}/></button><button onClick={()=>setTreatTypes(treatTypes.filter((x:any)=>x.id!==t.id))} className="text-red-400"><Trash2 size={14}/></button></div></div>)}</div>
+            <div className="space-y-2">{treatTypes.map((t:any)=><div key={t.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5"><span className="text-white text-sm">{t.name} - {t.price} ر.س</span><div className="flex gap-2"><button onClick={()=>setTreatTypes(treatTypes.filter((x:any)=>x.id!==t.id))} className="text-red-400"><Trash2 size={14}/></button></div></div>)}</div>
           </div>
         )}
         {settingsTab==='users' && (
           <div className="mt-5 space-y-4">
-            <div className="rounded-2xl bg-white/[.02] border border-white/10 p-4 space-y-3"><div className="font-semibold text-white flex items-center gap-2"><UserPlus size={18}/> إضافة مستخدم</div><div className="grid md:grid-cols-3 gap-3"><div><label className={label}>اسم المستخدم *</label><input value={newUser.username} onChange={e=>setNewUser({...newUser,username:e.target.value})} className={inp}/></div><div><label className={label}>كلمة المرور *</label><input value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} type="password" className={inp}/></div><div><label className={label}>الدور</label><select value={newUser.role} onChange={e=>setNewUser({...newUser,role:e.target.value})} className={inp}><option>طبيب</option><option>مدير</option><option>استقبال</option><option>محاسب</option></select></div></div><button onClick={()=>{ if(!newUser.username||!newUser.password){ alert('ادخل البيانات'); return } setAppUsers([...appUsers,{id:Date.now().toString(),...newUser}]); setNewUser({username:'',password:'',role:'طبيب'}) }} className={btnSm}><Plus size={16}/> إضافة</button></div>
-            <div className={card + ' !bg-white/[.02]'}><div className="flex justify-between items-center mb-3"><div className="font-bold flex items-center gap-2 text-white"><Users size={18}/> المستخدمون - {appUsers.length}</div><input value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="بحث..." className="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-xs w-40 text-white"/></div><div className="overflow-auto"><table className="w-full text-sm"><thead className="text-slate-400 text-xs"><tr><th className="p-2 text-right">اسم المستخدم</th><th className="p-2 text-right">الدور</th><th className="p-2"></th></tr></thead><tbody>{appUsers.filter((u:any)=> u.username.toLowerCase().includes(userSearch.toLowerCase())).map((u:any)=><tr key={u.id} className="border-t border-white/5"><td className="p-3 text-white">{u.username}</td><td className="p-3"><span className="text-xs px-2 py-1 rounded bg-white/10 text-white">{u.role}</span></td><td className="p-3 flex gap-1 justify-end"><button onClick={()=>setEditItem({type:'user',data:u})} className="p-1.5 rounded bg-white/5 text-white"><Edit3 size={12}/></button><button onClick={()=>{ if(confirm('حذف؟')) setAppUsers(appUsers.filter((x:any)=>x.id!==u.id)) }} className="p-1.5 rounded bg-red-500/20 text-red-300"><Trash2 size={12}/></button></td></tr>)}</tbody></table></div></div>
+            <div className="rounded-2xl bg-white/[.02] border border-white/10 p-4 space-y-3"><div className="font-semibold text-white flex items-center gap-2"><UserPlus size={18}/> إضافة مستخدم</div>
+              <div className="grid md:grid-cols-4 gap-3">
+                <div><label className={label}>اسم المستخدم *</label><input value={newUser.username} onChange={e=>setNewUser({...newUser,username:e.target.value})} className={inp}/></div>
+                <div><label className={label}>كلمة المرور *</label><input value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} type="password" className={inp}/></div>
+                <div><label className={label}>الدور</label><select value={newUser.role} onChange={e=>setNewUser({...newUser,role:e.target.value})} className={inp}><option>طبيب</option><option>مدير</option><option>استقبال</option><option>محاسب</option></select></div>
+                <div><label className={label}>اسم الطبيب (إن طبيب)</label><select value={newUser.doctorName} onChange={e=>setNewUser({...newUser,doctorName:e.target.value})} className={inp}><option value="">—</option>{doctors.map((d:any)=><option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
+              </div>
+              <button onClick={()=>{ if(!newUser.username||!newUser.password){ alert('ادخل البيانات'); return } setAppUsers([...appUsers,{id:Date.now().toString(),...newUser}]); setNewUser({username:'',password:'',role:'طبيب',doctorName:''}) }} className={btnSm}><Plus size={16}/> إضافة</button>
+            </div>
+            <div className={card + ' !bg-white/[.02]'}><div className="flex justify-between items-center mb-3"><div className="font-bold flex items-center gap-2 text-white"><Users size={18}/> المستخدمون - {appUsers.length}</div><input value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="بحث..." className="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-xs w-40 text-white"/></div>
+              <div className="overflow-auto"><table className="w-full text-sm"><thead className="text-slate-400 text-xs"><tr><th className="p-2 text-right">اسم المستخدم</th><th className="p-2 text-right">الدور</th><th className="p-2 text-right">الطبيب</th><th></th></tr></thead>
+                <tbody>{appUsers.filter((u:any)=> u.username.toLowerCase().includes(userSearch.toLowerCase())).map((u:any)=><tr key={u.id} className="border-t border-white/5"><td className="p-3 text-white">{u.username}</td><td className="p-3"><span className="text-xs px-2 py-1 rounded bg-white/10 text-white">{u.role}</span></td><td className="p-3 text-slate-300 text-xs">{u.doctorName || '—'}</td><td className="p-3 flex gap-1 justify-end"><button onClick={()=>{ if(confirm('حذف؟')) setAppUsers(appUsers.filter((x:any)=>x.id!==u.id)) }} className="p-1.5 rounded bg-red-500/20 text-red-300"><Trash2 size={12}/></button></td></tr>)}</tbody>
+              </table></div>
+            </div>
           </div>
         )}
-        {editItem && (<div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={()=>setEditItem(null)}><div className="bg-[#0f172a] border border-white/10 rounded-2xl p-4 w-full max-w-md" onClick={e=>e.stopPropagation()}><h3 className="font-bold mb-3 text-white">تعديل</h3>{editItem.type==='doc' && <div className="space-y-2"><input value={editItem.data.name} onChange={e=>setEditItem({...editItem,data:{...editItem.data,name:e.target.value}})} className={inp}/><input value={editItem.data.specialty||''} onChange={e=>setEditItem({...editItem,data:{...editItem.data,specialty:e.target.value}})} className={inp}/><div className="flex gap-2"><button onClick={()=>{setDoctors(doctors.map((d:any)=>d.id===editItem.data.id?editItem.data:d));setEditItem(null)}} className={btnSm}>حفظ</button><button onClick={()=>setEditItem(null)} className={btnGhost}>إلغاء</button></div></div>}{editItem.type==='treat' && <div className="space-y-2"><input value={editItem.data.name} onChange={e=>setEditItem({...editItem,data:{...editItem.data,name:e.target.value}})} className={inp}/><input type="number" value={editItem.data.price} onChange={e=>setEditItem({...editItem,data:{...editItem.data,price:parseInt(e.target.value)||0}})} className={inp}/><div className="flex gap-2"><button onClick={()=>{setTreatTypes(treatTypes.map((t:any)=>t.id===editItem.data.id?editItem.data:t));setEditItem(null)}} className={btnSm}>حفظ</button><button onClick={()=>setEditItem(null)} className={btnGhost}>إلغاء</button></div></div>}{editItem.type==='user' && <div className="space-y-2"><input value={editItem.data.username} onChange={e=>setEditItem({...editItem,data:{...editItem.data,username:e.target.value}})} className={inp}/><input value={editItem.data.password} onChange={e=>setEditItem({...editItem,data:{...editItem.data,password:e.target.value}})} className={inp}/><select value={editItem.data.role} onChange={e=>setEditItem({...editItem,data:{...editItem.data,role:e.target.value}})} className={inp}><option>طبيب</option><option>مدير</option><option>استقبال</option><option>محاسب</option></select><div className="flex gap-2"><button onClick={()=>{setAppUsers(appUsers.map((u:any)=>u.id===editItem.data.id?editItem.data:u));setEditItem(null)}} className={btnSm}>حفظ</button><button onClick={()=>setEditItem(null)} className={btnGhost}>إلغاء</button></div></div>}</div></div>)}
       </div>
     </div>
   );
 }
+
+/* ============ MAIN APP ============ */
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(()=>{
@@ -1265,6 +1856,7 @@ export default function App() {
   const [page, setPage] = useState('dashboard');
   const [editItem, setEditItem] = useState<any>(null);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [activePatient, setActivePatient] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -1301,10 +1893,7 @@ export default function App() {
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={()=>setSidebarOpen(false)} />}
       <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-64 border-l border-white/10 bg-[#0a1028] p-4 flex flex-col transition-transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 grid place-items-center font-bold">Z</div>
-            <div><div className="font-bold">Zircon</div><div className="text-[10px] text-slate-400">Dental OS V2</div></div>
-          </div>
+          <div className="flex items-center gap-3"><div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 grid place-items-center font-bold">Z</div><div><div className="font-bold">Zircon</div><div className="text-[10px] text-slate-400">Dental OS V2</div></div></div>
           <button onClick={()=>setSidebarOpen(false)} className="lg:hidden text-slate-400"><X size={18}/></button>
         </div>
         <nav className="space-y-1 flex-1 overflow-y-auto">
@@ -1322,7 +1911,7 @@ export default function App() {
             </div>
           </div>
           <button onClick={() => { localStorage.removeItem('zircon_currentUser'); supabase.auth.signOut(); setCurrentUser(null); setSession(null); }} className="w-full flex items-center gap-2 text-red-400 p-3 text-sm hover:bg-red-500/10 rounded-xl">
-            <LogOut size={18}/> تسجيل خروج - {currentUser?.username}
+            <LogOut size={18}/> تسجيل خروج
           </button>
         </div>
       </aside>
@@ -1336,9 +1925,14 @@ export default function App() {
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          {page==='dashboard' && (role === 'استقبال' ? <ReceptionDashboard setPage={setPage} /> : <Dashboard setPage={setPage} />)}
+          {page==='dashboard' && (role === 'استقبال' ? <ReceptionDashboard setPage={setPage} /> : role === 'طبيب' ? <DoctorDashboard setPage={setPage} setActivePatient={setActivePatient} /> : <Dashboard setPage={setPage} />)}
           {page==='reception-settings' && <ReceptionSettings />}
           {page==='session-booking' && <SessionBooking setPage={setPage} />}
+          {page==='doctor-cards' && <DoctorCardsView setPage={setPage} />}
+          {page==='doctor-treatments-list' && <DoctorTreatmentsList setPage={setPage} />}
+          {page==='medicines-list' && <MedicinesList setPage={setPage} />}
+          {page==='doctor-appointments' && <DoctorAppointments setPage={setPage} />}
+          {page==='treatment-screen' && <TreatmentScreen activePatient={activePatient} setPage={setPage} />}
           {page==='patients' && <Patients setPage={setPage} setEditItem={setEditItem} setSelectedPatient={setSelectedPatient} />}
           {page==='treatments-bulk' && <TreatmentsBulk />}
           {page==='patient-new' && <PatientForm patient={editItem} onSave={()=>setPage('patients')} onCancel={()=>setPage('patients')} />}
