@@ -1,11 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import {
   LayoutDashboard, Users, Calendar, LogOut, Menu, Bell, X,
   Stethoscope, Syringe, Receipt, FileText, Settings as SettingsIcon,
   Plus, Search, Mail, Lock, Loader2, ArrowRight, Save, Trash2, Edit3,
   MessageCircle, Clock, DollarSign, UserPlus, ClipboardList, HeartPulse, FileSpreadsheet,
-  Megaphone, TrendingUp, Target, BarChart3, RefreshCw, Check, Printer as PrinterIcon, Filter
+  Megaphone, TrendingUp, Target, BarChart3, RefreshCw, Check, Printer as PrinterIcon, Filter,
+  Building2, Clock4, Upload as UploadIcon, Image as ImageIcon
 } from 'lucide-react';
 
 const supabase = createClient(
@@ -119,7 +120,7 @@ function ToothChart({ implants, onToothClick }: { implants: any[], onToothClick:
     <div className="relative w-full h-[440px] md:h-[480px] mx-auto max-w-[420px]">
       <div className={`absolute left-1/2 -translate-x-1/2 w-[92%] h-[92%] border border-white/10 rounded-[50%] pointer-events-none ${isUpper ? 'top-[4%] rounded-b-none border-b-0' : 'bottom-[4%] rounded-t-none border-t-0'}`} />
       {teeth.map((n, idx) => {
-        const angle = (isUpper ? 180 : 0) + (isUpper ? 180 : 180) * (idx / (teeth.length - 1));
+        const angle = (isUpper ? 180 : 0) + 180 * (idx / (teeth.length - 1));
         const rad = (angle * Math.PI) / 180;
         const x = 50 + 43 * Math.cos(rad);
         const y = (isUpper ? 80 : 20) + 54 * Math.sin(rad);
@@ -329,6 +330,86 @@ function DiseaseLog(){
     </div>
   );
 }
+/* ============ RECEPTION SETTINGS ============ */
+const LS_RECEPTION_SETTINGS = 'zircon.receptionSettings.v1';
+const DEFAULT_RECEPTION_SETTINGS = {
+  workStart: '00:00', workEnd: '23:59',
+  clinicName: 'مركز زركون CAD CAM لتحميل وتقويم وزراعة الأسنان',
+  logo: '', phone1: '770605604', phone2: '', phone3: '',
+  address: 'صنعاء - الدائري الغربي - حولة ٢٠', examFee: 1000, officeName: '',
+};
+
+function ReceptionSettings(){
+  const [settings, setSettings] = useState<any>(() => {
+    try { return { ...DEFAULT_RECEPTION_SETTINGS, ...JSON.parse(localStorage.getItem(LS_RECEPTION_SETTINGS) || '{}') }; }
+    catch { return DEFAULT_RECEPTION_SETTINGS; }
+  });
+  const [saved, setSaved] = useState(false);
+  const fileRef = useRef<any>(null);
+  function update(key: string, value: any) { setSettings({ ...settings, [key]: value }); }
+  function save() { localStorage.setItem(LS_RECEPTION_SETTINGS, JSON.stringify(settings)); setSaved(true); setTimeout(() => setSaved(false), 2500); }
+  function reset() { if (!confirm('إعادة الإعدادات للافتراضي؟')) return; setSettings(DEFAULT_RECEPTION_SETTINGS); localStorage.setItem(LS_RECEPTION_SETTINGS, JSON.stringify(DEFAULT_RECEPTION_SETTINGS)); alert('تمت الاستعادة'); }
+  function uploadLogo(e: any) { const file = e.target.files?.[0]; if (!file) return; if (file.size > 1024 * 1024) { alert('حجم الشعار كبير'); return; } const reader = new FileReader(); reader.onload = (ev: any) => update('logo', ev.target.result); reader.readAsDataURL(file); }
+  return (
+    <div className="space-y-5 max-w-4xl">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div><h2 className="text-xl font-bold text-white flex items-center gap-2"><SettingsIcon size={22} className="text-blue-400"/> إعدادات الاستقبال</h2><p className="text-slate-400 text-xs mt-1">إعدادات العيادة العامة وتوقيت الدوام</p></div>
+        <div className="flex gap-2">
+          <button onClick={reset} className={btnGhost}>↺ استعادة</button>
+          <button onClick={save} className={btnSm}>{saved ? <Check size={16}/> : <Save size={16}/>}{saved ? 'تم الحفظ' : 'حفظ'}</button>
+        </div>
+      </div>
+      <div className={card}>
+        <h3 className="font-bold text-white mb-4 flex items-center gap-2"><Clock4 size={18} className="text-amber-400"/> توقيت الدوام</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className={label}>بداية الدوام</label><input type="time" value={settings.workStart} onChange={e => update('workStart', e.target.value)} className={inp} /></div>
+          <div><label className={label}>نهاية الدوام</label><input type="time" value={settings.workEnd} onChange={e => update('workEnd', e.target.value)} className={inp} /></div>
+        </div>
+      </div>
+      <div className={card}>
+        <h3 className="font-bold text-white mb-4 flex items-center gap-2"><Building2 size={18} className="text-blue-400"/> إعدادات العيادة</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2"><label className={label}>اسم العيادة</label><input value={settings.clinicName} onChange={e => update('clinicName', e.target.value)} className={inp} /></div>
+          <div className="md:col-span-2">
+            <label className={label}>شعار العيادة</label>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="h-24 w-24 rounded-2xl border-2 border-dashed border-white/20 bg-white/5 grid place-items-center overflow-hidden">
+                {settings.logo ? <img src={settings.logo} alt="logo" className="w-full h-full object-contain" /> : <ImageIcon size={32} className="text-slate-500" />}
+              </div>
+              <div className="space-y-2">
+                <input ref={fileRef} type="file" accept="image/*" onChange={uploadLogo} className="hidden" />
+                <button onClick={() => fileRef.current?.click()} className={btnSm}><UploadIcon size={16}/> رفع شعار</button>
+                {settings.logo && <button onClick={() => update('logo', '')} className="text-xs text-red-400 block">حذف الشعار</button>}
+                <p className="text-[10px] text-slate-500">PNG/JPG - أقل من 1 ميجا</p>
+              </div>
+            </div>
+          </div>
+          <div><label className={label}>التلفون 1</label><input value={settings.phone1} onChange={e => update('phone1', e.target.value)} className={inp} dir="ltr" /></div>
+          <div><label className={label}>التلفون 2</label><input value={settings.phone2} onChange={e => update('phone2', e.target.value)} className={inp} dir="ltr" /></div>
+          <div><label className={label}>التلفون 3</label><input value={settings.phone3} onChange={e => update('phone3', e.target.value)} className={inp} dir="ltr" /></div>
+          <div><label className={label}>اسم المكتب</label><input value={settings.officeName} onChange={e => update('officeName', e.target.value)} className={inp} /></div>
+          <div className="md:col-span-2"><label className={label}>العنوان</label><input value={settings.address} onChange={e => update('address', e.target.value)} className={inp} /></div>
+          <div><label className={label}>سعر المعاينة</label><input type="number" value={settings.examFee} onChange={e => update('examFee', Number(e.target.value) || 0)} className={inp} /></div>
+        </div>
+      </div>
+      <div className={card}>
+        <h3 className="font-bold text-white mb-4">معاينة البطاقة</h3>
+        <div className="rounded-2xl border-2 border-white/20 p-5 text-center bg-white text-black max-w-sm mx-auto">
+          {settings.logo && <img src={settings.logo} alt="logo" className="h-16 mx-auto mb-2 object-contain" />}
+          <h4 className="font-bold text-lg">{settings.clinicName}</h4>
+          <p className="text-xs mt-1">{settings.address}</p>
+          <p className="text-xs" dir="ltr">📞 {settings.phone1}{settings.phone2 ? ` / ${settings.phone2}` : ''}{settings.phone3 ? ` / ${settings.phone3}` : ''}</p>
+          <div className="my-3 text-3xl font-black text-blue-600">#—</div>
+          <p className="text-xs">سعر المعاينة: {settings.examFee} ريال</p>
+          <hr className="my-2" />
+          <p className="text-[10px]">الدوام من {settings.workStart} إلى {settings.workEnd}</p>
+        </div>
+      </div>
+      <div className="flex justify-end"><button onClick={save} className={btnSm + ' !px-8 !py-3'}>{saved ? <Check size={18}/> : <Save size={18}/>}{saved ? 'تم الحفظ' : 'حفظ'}</button></div>
+    </div>
+  );
+}
+
 /* ============ RECEPTION DASHBOARD ============ */
 function ReceptionDashboard({ setPage }: any) {
   const [searchName, setSearchName] = useState('');
@@ -336,6 +417,7 @@ function ReceptionDashboard({ setPage }: any) {
   const [searchPhone, setSearchPhone] = useState('');
   const [cards, setCards] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem('zircon_visitCards') || '[]'); } catch { return []; } });
   const [doctors, setDoctors] = useState<any[]>([]);
+  const [recSettings, setRecSettings] = useState<any>(DEFAULT_RECEPTION_SETTINGS);
   const [editingCard, setEditingCard] = useState<any>(null);
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
@@ -345,35 +427,50 @@ function ReceptionDashboard({ setPage }: any) {
   const [form, setForm] = useState({ name: '', age: '', gender: 'ذكر', phone: '', doctor: '', paymentMethod: '2 - نقد', transferType: '', currency: '101 - ريال يمني', regDate: TODAY, freeRenew: false });
 
   useEffect(() => { localStorage.setItem('zircon_visitCards', JSON.stringify(cards)); }, [cards]);
-  useEffect(() => { try { setDoctors(JSON.parse(localStorage.getItem('zircon_doctors') || '[]')); } catch {} }, []);
+  useEffect(() => {
+    try { setDoctors(JSON.parse(localStorage.getItem('zircon_doctors') || '[]')); } catch {}
+    try { setRecSettings({ ...DEFAULT_RECEPTION_SETTINGS, ...JSON.parse(localStorage.getItem(LS_RECEPTION_SETTINGS) || '{}') }); } catch {}
+  }, []);
 
   function generateCardNumber() { const maxNum = cards.reduce((m: any, c: any) => Math.max(m, parseInt(c.cardNumber) || 5700), 5700); return (maxNum + 1).toString(); }
   function clearSearch() { setSearchName(''); setSearchCard(''); setSearchPhone(''); }
   function newCard() { setEditingCard(null); setForm({ name: '', age: '', gender: 'ذكر', phone: '', doctor: '', paymentMethod: '2 - نقد', transferType: '', currency: '101 - ريال يمني', regDate: TODAY, freeRenew: false }); }
   function editCard(c: any) { setEditingCard(c); setForm({ ...c, freeRenew: c.freeRenew || false }); }
   function pushUndo() { setUndoStack([...undoStack, JSON.parse(JSON.stringify(cards))]); }
-
   function saveCard() {
-    if (!form.name.trim() || !form.phone.trim()) { alert('الاسم ورقم الجوال مطلوبان'); return; }
+    if (!form.name.trim() || !form.phone.trim()) { alert('الاسم والجوال مطلوبان'); return; }
     pushUndo();
     if (editingCard) { setCards(cards.map((c: any) => c.cardNumber === editingCard.cardNumber ? { ...form, cardNumber: editingCard.cardNumber, createdAt: editingCard.createdAt, completed: editingCard.completed } : c)); alert('تم تعديل البيانات'); setEditingCard(null); }
     else { const newNum = generateCardNumber(); const newCard = { ...form, cardNumber: newNum, createdAt: new Date().toISOString(), completed: false }; setCards([newCard, ...cards]); alert(`✓ تم حفظ الحالة\nرقم بطاقة المعاينة: ${newNum}`); newCard(); }
   }
-  function undo() { if (undoStack.length === 0) { alert('لا يوجد عمليات للتراجع'); return; } setCards(undoStack[undoStack.length - 1]); setUndoStack(undoStack.slice(0, -1)); alert('تم التراجع'); }
-  function renewCard(c: any, isFree: boolean = false) { if (!confirm(`تجديد المعاينة للمريض "${c.name}"؟${isFree ? ' (مجاني)' : ''}`)) return; pushUndo(); setCards(cards.map((x: any) => x.cardNumber === c.cardNumber ? { ...x, lastRenew: new Date().toISOString(), completed: false, freeRenew: isFree } : x)); alert('تم تجديد المعاينة'); }
+  function undo() { if (undoStack.length === 0) { alert('لا يوجد عمليات'); return; } setCards(undoStack[undoStack.length - 1]); setUndoStack(undoStack.slice(0, -1)); alert('تم التراجع'); }
+  function renewCard(c: any, isFree: boolean = false) { if (!confirm(`تجديد المعاينة للمريض "${c.name}"؟`)) return; pushUndo(); setCards(cards.map((x: any) => x.cardNumber === c.cardNumber ? { ...x, lastRenew: new Date().toISOString(), completed: false, freeRenew: isFree } : x)); alert('تم تجديد المعاينة'); }
   function toggleCompleted(c: any) { setCards(cards.map((x: any) => x.cardNumber === c.cardNumber ? { ...x, completed: !x.completed } : x)); }
 
   function printCard(c: any) {
-    const html = `<html dir="rtl"><head><title>بطاقة معاينة</title><style>body{font-family:Cairo,Arial,sans-serif;padding:20px;text-align:center;background:#fff;color:#000}.card{border:2px solid #000;padding:20px;max-width:400px;margin:20px auto;border-radius:8px}h1{margin:0 0 10px;font-size:24px}p{margin:5px 0;font-size:14px}.num{font-size:36px;font-weight:900;color:#0066cc;margin:15px 0}</style></head><body>
-    <div class="card"><h1>Zircon Dental Clinic</h1><p>عيادة زركون لزراعة الأسنان</p><hr/><div class="num">#${c.cardNumber}</div>
-    <p><b>الاسم:</b> ${c.name}</p><p><b>العمر:</b> ${c.age} - <b>الجنس:</b> ${c.gender}</p><p><b>الجوال:</b> ${c.phone}</p>
-    <p><b>الطبيب:</b> ${c.doctor || '—'}</p><p><b>تاريخ التسجيل:</b> ${c.regDate}</p><hr/>
-    <p style="font-size:11px">يرجى الاحتفاظ بهذه البطاقة وإحضارها معك في كل زيارة</p></div></body></html>`;
+    const s = recSettings;
+    const logoHtml = s.logo ? `<img src="${s.logo}" style="height:80px;display:block;margin:0 auto 10px" />` : '';
+    const phones = [s.phone1, s.phone2, s.phone3].filter(Boolean).join(' / ');
+    const html = `<html dir="rtl"><head><title>بطاقة معاينة</title><style>*{box-sizing:border-box}body{font-family:Cairo,Arial,sans-serif;padding:20px;text-align:center;background:#fff;color:#000;margin:0}.card{border:3px solid #000;padding:25px;max-width:420px;margin:20px auto;border-radius:12px}h1{margin:0 0 6px;font-size:22px}p{margin:5px 0;font-size:13px}.num{font-size:48px;font-weight:900;color:#0066cc;margin:18px 0;border:2px dashed #0066cc;padding:10px;border-radius:8px;letter-spacing:3px}.footer{font-size:10px;color:#666;margin-top:15px;border-top:1px solid #ccc;padding-top:8px}</style></head><body>
+    <div class="card">${logoHtml}
+    <h1>${s.clinicName || 'عيادة زركون'}</h1>
+    <p style="font-size:11px">${s.address || ''}</p>
+    <p style="font-size:11px" dir="ltr">📞 ${phones}</p>
+    <hr style="margin:12px 0"/>
+    <div class="num">#${c.cardNumber}</div>
+    <p><b>الاسم:</b> ${c.name}</p>
+    <p><b>العمر:</b> ${c.age || '—'} | <b>الجنس:</b> ${c.gender}</p>
+    <p><b>الجوال:</b> ${c.phone}</p>
+    <p><b>الطبيب المعالج:</b> ${c.doctor || '—'}</p>
+    <p><b>تاريخ التسجيل:</b> ${c.regDate}</p>
+    <p><b>سعر المعاينة:</b> ${s.examFee || 0} ريال</p>
+    <div class="footer">يرجى الاحتفاظ بهذه البطاقة وإحضارها معك في كل زيارة | الدوام من ${s.workStart} إلى ${s.workEnd}</div>
+    </div></body></html>`;
     const w = window.open('', '_blank');
-    if (w) { w.document.write(html); w.document.close(); setTimeout(() => { for (let i = 0; i < printCopies; i++) w.print(); }, 300); }
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => { for (let i = 0; i < printCopies; i++) w.print(); }, 400); }
   }
-  function openWhatsApp(c: any) { const msg = `مرحباً ${c.name}\nرقم بطاقة المعاينة: #${c.cardNumber}\nنتشرف بخدمتكم في عيادة زركون لزراعة الأسنان.`; window.open(`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank'); }
-  function sendSMS(c: any) { alert(`سيتم إرسال SMS إلى ${c.phone}\n\nرقم بطاقتك: #${c.cardNumber}`); }
+  function openWhatsApp(c: any) { const msg = `مرحباً ${c.name}\nرقم بطاقة المعاينة: #${c.cardNumber}\n${recSettings.clinicName}\nنتشرف بخدمتكم 🌟`; window.open(`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank'); }
+  function sendSMS(c: any) { alert(`سيتم إرسال SMS إلى ${c.phone}\n\nرقم بطاقتك: #${c.cardNumber}\n${recSettings.clinicName}`); }
 
   const filtered = cards.filter((c: any) => {
     const matchName = !searchName || (c.name || '').includes(searchName);
@@ -391,7 +488,7 @@ function ReceptionDashboard({ setPage }: any) {
     <div className="space-y-4">
       <div className="flex items-center gap-3"><button onClick={() => setShowWaiting(false)} className="text-slate-400"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">قائمة الانتظار - {waitingCount}</h2></div>
       <div className={card + ' !p-0 overflow-hidden'}>
-        <table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">ترتيب</th><th className="text-right px-4 py-3">رقم البطاقة</th><th className="text-right px-4 py-3">اسم المريض</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">وقت التسجيل</th></tr></thead>
+        <table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">#</th><th className="text-right px-4 py-3">رقم البطاقة</th><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">التسجيل</th></tr></thead>
           <tbody className="divide-y divide-white/5">{cards.filter((c: any) => !c.completed).sort((a: any, b: any) => (a.createdAt || '').localeCompare(b.createdAt || '')).map((c: any, i: number) => (<tr key={c.cardNumber} className="hover:bg-white/5"><td className="px-4 py-2 text-white font-bold">#{i + 1}</td><td className="px-4 py-2 font-mono text-blue-300 text-xs" dir="ltr">#{c.cardNumber}</td><td className="px-4 py-2 text-white">{c.name}</td><td className="px-4 py-2 text-slate-300">{c.doctor || '—'}</td><td className="px-4 py-2 text-slate-400 text-xs">{fmtDateTime(c.createdAt)}</td></tr>))}</tbody>
         </table>
       </div>
@@ -407,7 +504,7 @@ function ReceptionDashboard({ setPage }: any) {
         <div className={card}><div className="text-xs text-slate-400">قيد المعالجة</div><div className="text-2xl font-bold text-amber-400 mt-1">{cards.filter((c: any) => !c.completed && (c.createdAt || '').slice(0, 10) === TODAY).length}</div></div>
       </div>
       <div className={card + ' !p-0 overflow-hidden'}>
-        <table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">رقم البطاقة</th><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">طريقة الدفع</th><th className="text-right px-4 py-3">التاريخ</th></tr></thead>
+        <table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">رقم البطاقة</th><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">الدفع</th><th className="text-right px-4 py-3">التاريخ</th></tr></thead>
           <tbody className="divide-y divide-white/5">{cards.filter((c: any) => (c.createdAt || '').slice(0, 10) === TODAY).map((c: any) => (<tr key={c.cardNumber} className="hover:bg-white/5"><td className="px-4 py-2 font-mono text-blue-300 text-xs" dir="ltr">#{c.cardNumber}</td><td className="px-4 py-2 text-white">{c.name}</td><td className="px-4 py-2 text-slate-300">{c.doctor || '—'}</td><td className="px-4 py-2 text-slate-300 text-xs">{c.paymentMethod}</td><td className="px-4 py-2 text-slate-400 text-xs">{fmtDateTime(c.createdAt)}</td></tr>))}</tbody>
         </table>
       </div>
@@ -431,28 +528,28 @@ function ReceptionDashboard({ setPage }: any) {
           <input placeholder="رقم الجوال" value={searchPhone} onChange={e => setSearchPhone(e.target.value)} className={inp} dir="ltr" />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => {}} className={btnSm}><Search size={16}/> البحث عن حالة</button>
+          <button onClick={() => {}} className={btnSm}><Search size={16}/> بحث</button>
           <button onClick={clearSearch} className={btnGhost}>مسح البحث</button>
           <button onClick={newCard} className={btnSm + ' !bg-emerald-600 hover:!bg-emerald-500'}><Plus size={16}/> إضافة حالة جديدة</button>
         </div>
       </div>
 
       <div className={card}>
-        <h3 className="font-bold text-white mb-3 flex items-center gap-2">{editingCard ? <><Edit3 size={18} className="text-amber-400"/> تعديل حالة - بطاقة #{editingCard.cardNumber}</> : <><Plus size={18} className="text-emerald-400"/> بيانات حالة جديدة</>}</h3>
+        <h3 className="font-bold text-white mb-3 flex items-center gap-2">{editingCard ? <><Edit3 size={18} className="text-amber-400"/> تعديل حالة - #{editingCard.cardNumber}</> : <><Plus size={18} className="text-emerald-400"/> بيانات حالة جديدة</>}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div><label className={label}>اسم المريض *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inp} /></div>
-          <div><label className={label}>عمر المريض</label><input type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} className={inp} /></div>
+          <div><label className={label}>العمر</label><input type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} className={inp} /></div>
           <div><label className={label}>النوع</label><select value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })} className={inp}><option>ذكر</option><option>أنثى</option></select></div>
           <div><label className={label}>رقم التلفون *</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className={inp} dir="ltr" /></div>
           <div><label className={label}>الطبيب المعالج</label><select value={form.doctor} onChange={e => setForm({ ...form, doctor: e.target.value })} className={inp}><option value="">اختر الطبيب</option>{doctors.map((d: any) => <option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
           <div><label className={label}>طريقة الدفع</label><select value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })} className={inp}><option>1 - آجل</option><option>2 - نقد</option></select></div>
           <div><label className={label}>نوع الحوالة</label><select value={form.transferType} onChange={e => setForm({ ...form, transferType: e.target.value })} className={inp}><option value="">—</option><option>حوالة بنكية</option><option>كاش</option><option>شيك</option></select></div>
-          <div><label className={label}>اسم العملة</label><select value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} className={inp}><option>101 - ريال يمني</option><option>102 - ريال سعودي</option><option>103 - دولار</option></select></div>
+          <div><label className={label}>العملة</label><select value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} className={inp}><option>101 - ريال يمني</option><option>102 - ريال سعودي</option><option>103 - دولار</option></select></div>
           <div><label className={label}>تاريخ التسجيل</label><input type="date" value={form.regDate} onChange={e => setForm({ ...form, regDate: e.target.value })} className={inp} /></div>
         </div>
         <div className="mt-3 flex items-center gap-4 flex-wrap">
           <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer"><input type="checkbox" checked={form.freeRenew} onChange={e => setForm({ ...form, freeRenew: e.target.checked })} className="w-4 h-4" />تجديد مجاني</label>
-          <label className="flex items-center gap-2 text-sm text-slate-300">عدد النسخ:<select value={printCopies} onChange={e => setPrintCopies(Number(e.target.value))} className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 text-xs text-white"><option value={1}>كرت واحد</option><option value={2}>كرتين</option></select></label>
+          <label className="flex items-center gap-2 text-sm text-slate-300">النسخ:<select value={printCopies} onChange={e => setPrintCopies(Number(e.target.value))} className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 text-xs text-white"><option value={1}>كرت</option><option value={2}>كرتين</option></select></label>
         </div>
         <div className="mt-4 flex gap-2 flex-wrap">
           <button onClick={saveCard} className={btnSm + ' !px-6'}><Save size={16}/> حفظ بيانات حالة</button>
@@ -461,23 +558,23 @@ function ReceptionDashboard({ setPage }: any) {
           {editingCard && <button onClick={() => sendSMS(editingCard)} className={btnGhost}>📱 SMS</button>}
           <button onClick={undo} disabled={undoStack.length === 0} className={btnGhost + ' disabled:opacity-40'}>↶ التراجع</button>
           <button onClick={() => setShowDaily(true)} className={btnGhost}>📊 اليومية</button>
-          <button onClick={() => setShowWaiting(true)} className={btnGhost}>⏳ قائمة الانتظار ({waitingCount})</button>
-          {editingCard && <button onClick={() => renewCard(editingCard, form.freeRenew)} className="rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold px-4 py-2.5 text-sm flex items-center gap-2"><RefreshCw size={16}/> تجديد المعاينة</button>}
+          <button onClick={() => setShowWaiting(true)} className={btnGhost}>⏳ الانتظار ({waitingCount})</button>
+          {editingCard && <button onClick={() => renewCard(editingCard, form.freeRenew)} className="rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold px-4 py-2.5 text-sm flex items-center gap-2"><RefreshCw size={16}/> تجديد</button>}
         </div>
       </div>
 
       <div className="flex gap-2 flex-wrap items-center">
         <Filter size={14} className="text-slate-500"/><span className="text-xs text-slate-400">فلتر:</span>
-        <button onClick={() => setFilter('all')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10')}>الكل ({cards.length})</button>
-        <button onClick={() => setFilter('incomplete')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'incomplete' ? 'bg-amber-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10')}>لم يكمل ({cards.filter((c: any) => !c.completed).length})</button>
-        <button onClick={() => setFilter('completed')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10')}>أكمل ({cards.filter((c: any) => c.completed).length})</button>
+        <button onClick={() => setFilter('all')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300')}>الكل ({cards.length})</button>
+        <button onClick={() => setFilter('incomplete')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'incomplete' ? 'bg-amber-600 text-white' : 'bg-white/5 text-slate-300')}>لم يكمل ({cards.filter((c: any) => !c.completed).length})</button>
+        <button onClick={() => setFilter('completed')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300')}>أكمل ({cards.filter((c: any) => c.completed).length})</button>
       </div>
 
       <div className={card + ' !p-0 overflow-hidden'}>
-        <div className="p-3 border-b border-white/10"><h3 className="font-bold text-white text-sm">سجل الحالات - {filtered.length} حالة</h3></div>
+        <div className="p-3 border-b border-white/10"><h3 className="font-bold text-white text-sm">سجل الحالات - {filtered.length}</h3></div>
         <div className="overflow-auto">
           <table className="w-full text-sm min-w-[900px]">
-            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-3 py-3">رقم البطاقة</th><th className="text-right px-3 py-3">اسم المريض</th><th className="text-right px-3 py-3">العمر</th><th className="text-right px-3 py-3">النوع</th><th className="text-right px-3 py-3">الجوال</th><th className="text-right px-3 py-3">الطبيب</th><th className="text-right px-3 py-3">التسجيل</th><th className="text-right px-3 py-3">الحالة</th><th className="text-right px-3 py-3">إجراءات</th></tr></thead>
+            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-3 py-3">البطاقة</th><th className="text-right px-3 py-3">الاسم</th><th className="text-right px-3 py-3">العمر</th><th className="text-right px-3 py-3">النوع</th><th className="text-right px-3 py-3">الجوال</th><th className="text-right px-3 py-3">الطبيب</th><th className="text-right px-3 py-3">التسجيل</th><th className="text-right px-3 py-3">الحالة</th><th className="text-right px-3 py-3">إجراءات</th></tr></thead>
             <tbody className="divide-y divide-white/5">
               {filtered.length === 0 ? <tr><td colSpan={9} className="p-6 text-center text-slate-500">لا توجد حالات</td></tr> :
                 filtered.map((c: any) => (<tr key={c.cardNumber} className="hover:bg-white/5">
@@ -512,30 +609,25 @@ function SessionBooking({ setPage }: any) {
   const [sessions, setSessions] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem('zircon_sessions') || '[]'); } catch { return []; } });
   const [form, setForm] = useState({ patientName: '', doctor: '', date: TODAY });
   const [selectedSession, setSelectedSession] = useState<any>(null);
-
   useEffect(() => { localStorage.setItem('zircon_sessions', JSON.stringify(sessions)); }, [sessions]);
   useEffect(() => { try { setPatients(JSON.parse(localStorage.getItem('zircon_visitCards') || '[]')); } catch {} try { setDoctors(JSON.parse(localStorage.getItem('zircon_doctors') || '[]')); } catch {} }, []);
-
   function bookSession() {
-    if (!form.patientName || !form.doctor || !form.date) { alert('أكمل جميع الحقول'); return; }
+    if (!form.patientName || !form.doctor || !form.date) { alert('أكمل الحقول'); return; }
     const patient = patients.find((p: any) => p.name === form.patientName);
-    const conflict = sessions.find((s: any) => s.patientName === form.patientName && s.doctor === form.doctor && s.date === form.date);
-    if (conflict) { alert('يوجد حجز مسبق'); return; }
+    if (sessions.find((s: any) => s.patientName === form.patientName && s.doctor === form.doctor && s.date === form.date)) { alert('يوجد حجز مسبق'); return; }
     setSessions([...sessions, { id: Date.now().toString(), patientName: form.patientName, cardNumber: patient?.cardNumber || '', doctor: form.doctor, date: form.date, createdAt: new Date().toISOString() }]);
-    setForm({ ...form, patientName: '' });
-    alert('✓ تم حجز الجلسة');
+    setForm({ ...form, patientName: '' }); alert('✓ تم حجز الجلسة');
   }
   function removeSession() { if (!selectedSession) { alert('اختر حجزاً أولاً'); return; } if (!confirm(`حذف حجز "${selectedSession.patientName}"؟`)) return; setSessions(sessions.filter((s: any) => s.id !== selectedSession.id)); setSelectedSession(null); }
   const daySessions = sessions.filter((s: any) => s.date === form.date && (!form.doctor || s.doctor === form.doctor));
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">حجز الجلسات</h2></div>
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">حجز الجلسات</h2></div>
       <div className={card}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div><label className={label}>اسم المريض</label><select value={form.patientName} onChange={e => setForm({ ...form, patientName: e.target.value })} className={inp}><option value="">اختر المريض</option>{patients.map((p: any) => <option key={p.cardNumber} value={p.name}>{p.name} - #{p.cardNumber}</option>)}</select></div>
-          <div><label className={label}>الطبيب المعالج</label><select value={form.doctor} onChange={e => setForm({ ...form, doctor: e.target.value })} className={inp}><option value="">اختر الطبيب</option>{doctors.map((d: any) => <option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
-          <div><label className={label}>تاريخ الحجز</label><input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className={inp} /></div>
+          <div><label className={label}>الطبيب</label><select value={form.doctor} onChange={e => setForm({ ...form, doctor: e.target.value })} className={inp}><option value="">اختر</option>{doctors.map((d: any) => <option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
+          <div><label className={label}>التاريخ</label><input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className={inp} /></div>
         </div>
         <div className="mt-4 flex gap-2 flex-wrap">
           <button onClick={bookSession} className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 text-sm flex items-center gap-2"><Check size={18}/> حجز جلسة</button>
@@ -543,10 +635,10 @@ function SessionBooking({ setPage }: any) {
         </div>
       </div>
       <div className={card + ' !p-0 overflow-hidden'}>
-        <div className="p-3 border-b border-white/10"><h3 className="font-bold text-white text-sm">حجوزات يوم {form.date} {form.doctor && `- ${form.doctor}`} <span className="text-cyan-400">({daySessions.length})</span></h3></div>
+        <div className="p-3 border-b border-white/10"><h3 className="font-bold text-white text-sm">حجوزات {form.date} ({daySessions.length})</h3></div>
         <div className="overflow-auto">
           <table className="w-full text-sm">
-            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">رقم البطاقة</th><th className="text-right px-4 py-3">اسم المريض</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">وقت الحجز</th><th className="text-right px-4 py-3"></th></tr></thead>
+            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">البطاقة</th><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">الوقت</th><th></th></tr></thead>
             <tbody className="divide-y divide-white/5">
               {daySessions.length === 0 ? <tr><td colSpan={5} className="p-6 text-center text-slate-500">لا توجد حجوزات</td></tr> :
                 daySessions.map((s: any) => (<tr key={s.id} onClick={() => setSelectedSession(s)} className={'cursor-pointer ' + (selectedSession?.id === s.id ? 'bg-blue-500/10' : 'hover:bg-white/5')}>
@@ -555,8 +647,7 @@ function SessionBooking({ setPage }: any) {
                   <td className="px-4 py-2 text-slate-300">{s.doctor}</td>
                   <td className="px-4 py-2 text-slate-400 text-xs" dir="ltr">{new Date(s.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</td>
                   <td className="px-4 py-2">{selectedSession?.id === s.id && <span className="text-xs text-blue-400 font-bold">✓ محدد</span>}</td>
-                </tr>))
-              }
+                </tr>))}
             </tbody>
           </table>
         </div>
@@ -564,8 +655,7 @@ function SessionBooking({ setPage }: any) {
     </div>
   );
 }
-
-/* ============ DASHBOARD (للمدير والطبيب) ============ */
+/* ============ DASHBOARD ============ */
 function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
   const [stats, setStats] = useState({ patients: 0, today: 0, surgeries: 0, implants: 0, followups: 0, unpaid: 0 });
   const [recent, setRecent] = useState<any[]>([]);
@@ -619,6 +709,7 @@ function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
   );
 }
 
+/* ============ PATIENTS ============ */
 function Patients({ setPage, setEditItem, setSelectedPatient }: any) {
   const [list, setList] = useState<any[]>([]); const [search, setSearch] = useState(''); const [loading, setLoading] = useState(true);
   const load = useCallback(async ()=>{ setLoading(true); let q = supabase.from('patients').select('*').order('created_at', { ascending: false }).limit(100); if (search) q = q.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%,patient_code.ilike.%${search}%`); const { data } = await q; setList(data || []); setLoading(false); }, [search]);
@@ -747,6 +838,7 @@ function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
   );
 }
 
+/* ============ SURGERIES ============ */
 function Surgeries({ setPage, setSelectedPatient }: any) {
   const [list, setList] = useState<any[]>([]);
   useEffect(()=>{ (async()=>{ const {data}=await supabase.from('surgeries').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
@@ -765,6 +857,7 @@ function Surgeries({ setPage, setSelectedPatient }: any) {
   );
 }
 
+/* ============ APPOINTMENTS ============ */
 function Appointments({ setPage }: any) {
   const [list, setList] = useState<any[]>([]);
   useEffect(()=>{ (async()=>{ const {data}=await supabase.from('appointments').select('*, patient:patients(full_name)').order('scheduled_start',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
@@ -812,6 +905,7 @@ function AppointmentForm({ onSave, onCancel }: any) {
   );
 }
 
+/* ============ SURGERY FORM ============ */
 function SurgeryForm({ onSave, onCancel }: any) {
   const [patients, setPatients] = useState<any[]>([]);
   const [patientId, setPatientId] = useState('');
@@ -837,6 +931,7 @@ function SurgeryForm({ onSave, onCancel }: any) {
   );
 }
 
+/* ============ IMPLANT MODAL ============ */
 function ImplantModal({ surgeryId, patientId, initialTooth, onClose, onSave }: any) {
   const [form, setForm] = useState({ tooth_number: initialTooth||11, brand: 'Straumann', diameter_mm: '4.1', length_mm: '10', torque_ncm: '35', bone_density: 'D2' });
   const [loading, setLoading] = useState(false);
@@ -865,6 +960,7 @@ function ImplantModal({ surgeryId, patientId, initialTooth, onClose, onSave }: a
   );
 }
 
+/* ============ IMPLANTS LIST ============ */
 function Implants() {
   const [list, setList] = useState<any[]>([]);
   useEffect(()=>{ supabase.from('implants').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100).then(({data})=>setList(data||[])); },[]);
@@ -878,6 +974,7 @@ function Implants() {
   );
 }
 
+/* ============ REPORTS ============ */
 function Reports() {
   const [stats, setStats] = useState({ patients:0, surgeries:0, implants:0, treatments:0 });
   useEffect(()=>{ (async()=>{
@@ -1111,6 +1208,7 @@ function LeadModal({ onClose, onSave }: any) {
   );
 }
 
+/* ============ SETTINGS PAGE (main admin settings) ============ */
 function SettingsPage(){
   const [settingsTab, setSettingsTab] = useState<'doctors'|'treatments'|'users'>('doctors');
   const [doctors, setDoctors] = useState<any[]>(()=>{ try{ return JSON.parse(localStorage.getItem('zircon_doctors')||'[{"id":"1","name":"د. أحمد الشطبي","specialty":"زراعة"},{"id":"2","name":"د. جلال الداعري","specialty":"تقويم"}]') }catch{ return [] } });
@@ -1185,6 +1283,7 @@ export default function App() {
 
   const allMenu = [
     { id:'dashboard', label:'لوحة التحكم', icon: LayoutDashboard, roles:['مدير','طبيب','استقبال','محاسب'] },
+    { id:'reception-settings', label:'إعدادات الاستقبال', icon: SettingsIcon, roles:['استقبال','مدير'] },
     { id:'patients', label:'المرضى', icon: Users, roles:['مدير','طبيب','استقبال'] },
     { id:'treatments-bulk', label:'إضافة معالجات', icon: FileSpreadsheet, roles:['مدير','طبيب'] },
     { id:'appointments', label:'المواعيد', icon: Calendar, roles:['مدير','طبيب','استقبال'] },
@@ -1238,6 +1337,7 @@ export default function App() {
         </header>
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           {page==='dashboard' && (role === 'استقبال' ? <ReceptionDashboard setPage={setPage} /> : <Dashboard setPage={setPage} />)}
+          {page==='reception-settings' && <ReceptionSettings />}
           {page==='session-booking' && <SessionBooking setPage={setPage} />}
           {page==='patients' && <Patients setPage={setPage} setEditItem={setEditItem} setSelectedPatient={setSelectedPatient} />}
           {page==='treatments-bulk' && <TreatmentsBulk />}
