@@ -4,7 +4,8 @@ import {
   LayoutDashboard, Users, Calendar, LogOut, Menu, Bell, X,
   Stethoscope, Syringe, Receipt, FileText, Settings as SettingsIcon,
   Plus, Search, Mail, Lock, Loader2, ArrowRight, Save, Trash2, Edit3,
-  MessageCircle, Clock, DollarSign, UserPlus, ClipboardList, HeartPulse, FileSpreadsheet
+  MessageCircle, Clock, DollarSign, UserPlus, ClipboardList, HeartPulse, FileSpreadsheet,
+  Megaphone, TrendingUp, Target, BarChart3
 } from 'lucide-react';
 
 const supabase = createClient(
@@ -975,6 +976,527 @@ function Reports() {
   );
 }
 
+/* ============================================ */
+/* ============ MARKETING MODULE ============ */
+/* ============================================ */
+
+const LS_CAMPAIGNS = 'zircon.marketing.campaigns.v2';
+const LS_LEADS = 'zircon.marketing.leads.v2';
+
+function loadLS(key: string, def: any = []): any {
+  try { return JSON.parse(localStorage.getItem(key) || 'null') || def; } catch { return def; }
+}
+function saveLS(key: string, val: any) { localStorage.setItem(key, JSON.stringify(val)); }
+
+const LEAD_SOURCES = [
+  { id: 'facebook', label: 'فيسبوك', color: 'bg-blue-500/20 text-blue-300', icon: '📘' },
+  { id: 'instagram', label: 'إنستغرام', color: 'bg-pink-500/20 text-pink-300', icon: '📸' },
+  { id: 'tiktok', label: 'تيك توك', color: 'bg-slate-500/20 text-slate-200', icon: '🎵' },
+  { id: 'snapchat', label: 'سناب شات', color: 'bg-yellow-500/20 text-yellow-300', icon: '👻' },
+  { id: 'google', label: 'جوجل', color: 'bg-amber-500/20 text-amber-300', icon: '🔍' },
+  { id: 'whatsapp', label: 'واتساب', color: 'bg-emerald-500/20 text-emerald-300', icon: '💬' },
+  { id: 'referral', label: 'توصية', color: 'bg-purple-500/20 text-purple-300', icon: '🤝' },
+  { id: 'walk_in', label: 'زيارة مباشرة', color: 'bg-cyan-500/20 text-cyan-300', icon: '🚶' },
+  { id: 'phone', label: 'اتصال هاتفي', color: 'bg-indigo-500/20 text-indigo-300', icon: '📞' },
+  { id: 'other', label: 'أخرى', color: 'bg-slate-500/20 text-slate-300', icon: '📌' },
+];
+
+const CAMPAIGN_STATUS: Record<string, [string, string]> = {
+  active: ['نشطة', 'bg-emerald-500/20 text-emerald-300'],
+  paused: ['متوقفة', 'bg-amber-500/20 text-amber-300'],
+  completed: ['منتهية', 'bg-blue-500/20 text-blue-300'],
+  draft: ['مسودة', 'bg-slate-500/20 text-slate-300'],
+};
+
+const LEAD_STATUS: Record<string, [string, string]> = {
+  new: ['جديد', 'bg-blue-500/20 text-blue-300'],
+  contacted: ['تم التواصل', 'bg-amber-500/20 text-amber-300'],
+  booked: ['حجز موعد', 'bg-purple-500/20 text-purple-300'],
+  converted: ['تحوّل لمريض', 'bg-emerald-500/20 text-emerald-300'],
+  lost: ['فقد', 'bg-red-500/20 text-red-300'],
+};
+
+function Marketing() {
+  const [campaigns, setCampaigns] = useState<any[]>(() => loadLS(LS_CAMPAIGNS));
+  const [leads, setLeads] = useState<any[]>(() => loadLS(LS_LEADS));
+  const [tab, setTab] = useState('overview');
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [editCampaign, setEditCampaign] = useState<any>(null);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [doctorStats, setDoctorStats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const [p, surgeriesData, implantsData] = await Promise.all([
+        supabase.from('patients').select('id, full_name, phone, created_at').order('created_at', { ascending: false }).limit(500),
+        supabase.from('surgeries').select('doctor_id, created_at'),
+        supabase.from('implants').select('id, created_at'),
+      ]);
+      setPatients(p.data || []);
+
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      setDoctorStats([
+        { label: 'مرضى هذا الشهر', value: (p.data || []).filter((x: any) => new Date(x.created_at) >= monthStart).length },
+        { label: 'جراحات هذا الشهر', value: (surgeriesData.data || []).filter((x: any) => new Date(x.created_at) >= monthStart).length },
+        { label: 'زرعات هذا الشهر', value: (implantsData.data || []).filter((x: any) => new Date(x.created_at) >= monthStart).length },
+      ]);
+      setLoading(false);
+    })();
+  }, []);
+
+  function persistCampaigns(next: any[]) { setCampaigns(next); saveLS(LS_CAMPAIGNS, next); }
+  function persistLeads(next: any[]) { setLeads(next); saveLS(LS_LEADS, next); }
+
+  function addOrUpdateCampaign(c: any) {
+    if (c.id) {
+      persistCampaigns(campaigns.map((x: any) => (x.id === c.id ? c : x)));
+    } else {
+      persistCampaigns([{ ...c, id: crypto.randomUUID(), created_at: new Date().toISOString() }, ...campaigns]);
+    }
+    setShowCampaignModal(false); setEditCampaign(null);
+  }
+  function delCampaign(id: string) {
+    if (!confirm('حذف الحملة؟')) return;
+    persistCampaigns(campaigns.filter((x: any) => x.id !== id));
+  }
+  function addLead(l: any) {
+    persistLeads([{ ...l, id: crypto.randomUUID(), created_at: new Date().toISOString() }, ...leads]);
+    setShowLeadModal(false);
+  }
+  function delLead(id: string) {
+    if (!confirm('حذف العميل المحتمل؟')) return;
+    persistLeads(leads.filter((x: any) => x.id !== id));
+  }
+  function updateLeadStatus(id: string, status: string) {
+    persistLeads(leads.map((l: any) => (l.id === id ? { ...l, status } : l)));
+  }
+
+  const totalBudget = campaigns.reduce((s, c) => s + (Number(c.budget) || 0), 0);
+  const totalSpent = campaigns.reduce((s, c) => s + (Number(c.spent) || 0), 0);
+  const activeCampaigns = campaigns.filter((c) => c.status === 'active').length;
+  const convertedLeads = leads.filter((l) => l.status === 'converted').length;
+  const conversionRate = leads.length > 0 ? Math.round((convertedLeads / leads.length) * 100) : 0;
+
+  const Stat = ({ icon: Icon, label, value, tone, sub }: any) => (
+    <div className={card}>
+      <div className={'h-10 w-10 rounded-xl grid place-items-center mb-3 ' + tone}><Icon size={20} /></div>
+      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="text-sm text-slate-400 mt-1">{label}</div>
+      {sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Megaphone size={22} className="text-blue-400"/> إدارة التسويق
+          </h2>
+          <p className="text-slate-400 text-xs mt-1">إدارة الحملات والعملاء المحتملين ومصادر المرضى</p>
+        </div>
+      </div>
+
+      <div className="border-b border-white/10 overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
+          {[
+            { id: 'overview', label: 'نظرة عامة' },
+            { id: 'campaigns', label: `الحملات (${campaigns.length})` },
+            { id: 'leads', label: `عملاء محتملون (${leads.length})` },
+            { id: 'sources', label: 'مصادر المرضى' },
+            { id: 'funnel', label: 'قمع التحويل' },
+          ].map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={'px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition ' +
+                (tab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-slate-400 hover:text-white')}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === 'overview' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Stat icon={Megaphone} label="الحملات النشطة" value={activeCampaigns} tone="bg-blue-500/20 text-blue-300" sub={`من ${campaigns.length}`} />
+            <Stat icon={Users} label="العملاء المحتملون" value={leads.length} tone="bg-emerald-500/20 text-emerald-300" />
+            <Stat icon={Target} label="معدل التحويل" value={`${conversionRate}%`} tone="bg-amber-500/20 text-amber-300" sub={`${convertedLeads} متحوّل`} />
+            <Stat icon={DollarSign} label="الميزانية المتبقية" value={`${(totalBudget - totalSpent).toLocaleString()} ر.س`} tone="bg-purple-500/20 text-purple-300" sub={`من ${totalBudget.toLocaleString()}`} />
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-5">
+            <div className={card}>
+              <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                <TrendingUp size={18} className="text-emerald-400"/> أداء العيادة
+              </h3>
+              {loading ? <p className="text-sm text-slate-500">جاري التحميل...</p> : (
+                <div className="space-y-3">
+                  {doctorStats.map((s, i) => (
+                    <div key={i} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                      <span className="text-sm text-slate-300">{s.label}</span>
+                      <span className="text-lg font-bold text-white" dir="ltr">{s.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={card}>
+              <h3 className="font-semibold text-white mb-4">آخر الحملات</h3>
+              {campaigns.length === 0 ? (
+                <p className="text-sm text-slate-500">لا توجد حملات — أضف حملتك الأولى</p>
+              ) : (
+                <div className="space-y-2">
+                  {campaigns.slice(0, 5).map((c: any) => {
+                    const st = CAMPAIGN_STATUS[c.status] || CAMPAIGN_STATUS.draft;
+                    return (
+                      <div key={c.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-white truncate">{c.name}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">{c.channel || '—'} · {fmtDate(c.start_date)}</div>
+                        </div>
+                        <span className={'text-[10px] px-2 py-0.5 rounded border border-white/10 ' + st[1]}>{st[0]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'campaigns' && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button onClick={() => { setEditCampaign(null); setShowCampaignModal(true); }} className={btnSm}>
+              <Plus size={16}/> حملة جديدة
+            </button>
+          </div>
+          <div className={card + ' !p-0 overflow-hidden'}>
+            {campaigns.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">لا توجد حملات</div>
+            ) : (
+              <div className="overflow-auto">
+                <table className="w-full text-sm min-w-[700px]">
+                  <thead className="bg-white/5 text-slate-400 text-xs">
+                    <tr>
+                      <th className="text-right px-4 py-3">الاسم</th>
+                      <th className="text-right px-4 py-3">القناة</th>
+                      <th className="text-right px-4 py-3">الميزانية</th>
+                      <th className="text-right px-4 py-3">المصروف</th>
+                      <th className="text-right px-4 py-3">المتبقي</th>
+                      <th className="text-right px-4 py-3">الحالة</th>
+                      <th className="text-right px-4 py-3">إجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {campaigns.map((c: any) => {
+                      const st = CAMPAIGN_STATUS[c.status] || CAMPAIGN_STATUS.draft;
+                      const remaining = (Number(c.budget) || 0) - (Number(c.spent) || 0);
+                      return (
+                        <tr key={c.id} className="hover:bg-white/5">
+                          <td className="px-4 py-3 text-white">{c.name}</td>
+                          <td className="px-4 py-3 text-slate-300 text-xs">{c.channel || '—'}</td>
+                          <td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{(Number(c.budget) || 0).toLocaleString()}</td>
+                          <td className="px-4 py-3 text-amber-300 text-xs" dir="ltr">{(Number(c.spent) || 0).toLocaleString()}</td>
+                          <td className={'px-4 py-3 text-xs ' + (remaining < 0 ? 'text-red-300' : 'text-emerald-300')} dir="ltr">{remaining.toLocaleString()}</td>
+                          <td className="px-4 py-3">
+                            <span className={'text-[11px] px-2 py-1 rounded-md border border-white/10 ' + st[1]}>{st[0]}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button onClick={() => { setEditCampaign(c); setShowCampaignModal(true); }} className="text-blue-400"><Edit3 size={15}/></button>
+                              <button onClick={() => delCampaign(c.id)} className="text-red-400"><Trash2 size={15}/></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === 'leads' && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button onClick={() => setShowLeadModal(true)} className={btnSm}>
+              <Plus size={16}/> عميل محتمل
+            </button>
+          </div>
+          <div className={card + ' !p-0 overflow-hidden'}>
+            {leads.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">لا يوجد عملاء محتملون</div>
+            ) : (
+              <div className="overflow-auto">
+                <table className="w-full text-sm min-w-[800px]">
+                  <thead className="bg-white/5 text-slate-400 text-xs">
+                    <tr>
+                      <th className="text-right px-4 py-3">الاسم</th>
+                      <th className="text-right px-4 py-3">الجوال</th>
+                      <th className="text-right px-4 py-3">المصدر</th>
+                      <th className="text-right px-4 py-3">الحالة</th>
+                      <th className="text-right px-4 py-3">ملاحظات</th>
+                      <th className="text-right px-4 py-3">إجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {leads.map((l: any) => {
+                      const src = LEAD_SOURCES.find((s) => s.id === l.source) || LEAD_SOURCES[LEAD_SOURCES.length - 1];
+                      const st = LEAD_STATUS[l.status] || LEAD_STATUS.new;
+                      return (
+                        <tr key={l.id} className="hover:bg-white/5">
+                          <td className="px-4 py-3 text-white">{l.name}</td>
+                          <td className="px-4 py-3 text-slate-300" dir="ltr">
+                            <div className="flex items-center gap-2">
+                              <span>{l.phone || '—'}</span>
+                              {l.phone && (
+                                <a href={`https://wa.me/${l.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300">
+                                  <MessageCircle size={14}/>
+                                </a>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={'text-[11px] px-2 py-1 rounded ' + src.color}>{src.icon} {src.label}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <select value={l.status || 'new'} onChange={(e) => updateLeadStatus(l.id, e.target.value)}
+                              className={'text-[11px] px-2 py-1 rounded border border-white/10 bg-transparent ' + st[1]}>
+                              {Object.entries(LEAD_STATUS).map(([k, v]) => <option key={k} value={k} className="bg-slate-800">{v[0]}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-xs max-w-[180px] truncate">{l.notes || '—'}</td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => delLead(l.id)} className="text-red-400"><Trash2 size={15}/></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === 'sources' && (
+        <div className="space-y-4">
+          <div className={card}>
+            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <BarChart3 size={18} className="text-blue-400"/> مصادر اكتساب المرضى
+            </h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {LEAD_SOURCES.map((s) => {
+                const leadCount = leads.filter((l: any) => l.source === s.id).length;
+                return (
+                  <div key={s.id} className="rounded-xl border border-white/10 bg-white/[.02] p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{s.icon}</span>
+                      <span className={'text-sm px-2 py-1 rounded ' + s.color}>{s.label}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-white" dir="ltr">{leadCount}</div>
+                      <div className="text-[10px] text-slate-500">عميل محتمل</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={card}>
+            <h3 className="font-semibold text-white mb-4">ملخص المرضى</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4 text-center">
+                <div className="text-2xl font-bold text-blue-300" dir="ltr">{patients.length}</div>
+                <div className="text-xs text-slate-400 mt-1">إجمالي المرضى</div>
+              </div>
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-center">
+                <div className="text-2xl font-bold text-emerald-300" dir="ltr">{patients.filter((p: any) => {
+                  const d = new Date(p.created_at);
+                  const now = new Date();
+                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                }).length}</div>
+                <div className="text-xs text-slate-400 mt-1">هذا الشهر</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'funnel' && (
+        <div className={card}>
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <Target size={18} className="text-amber-400"/> قمع التحويل
+          </h3>
+          <div className="space-y-3">
+            {[
+              { key: 'new', label: 'عملاء جدد', color: 'from-blue-500 to-blue-600' },
+              { key: 'contacted', label: 'تم التواصل', color: 'from-amber-500 to-amber-600' },
+              { key: 'booked', label: 'حجز موعد', color: 'from-purple-500 to-purple-600' },
+              { key: 'converted', label: 'تحوّلوا لمرضى', color: 'from-emerald-500 to-emerald-600' },
+              { key: 'lost', label: 'فقدوا', color: 'from-red-500 to-red-600' },
+            ].map((stage) => {
+              const count = leads.filter((l: any) => (l.status || 'new') === stage.key).length;
+              const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
+              return (
+                <div key={stage.key}>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-slate-300">{stage.label}</span>
+                    <span className="text-white font-bold" dir="ltr">{count} ({pct}%)</span>
+                  </div>
+                  <div className="h-3 rounded-full bg-white/5 overflow-hidden">
+                    <div className={`h-full bg-gradient-to-l ${stage.color} transition-all`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-white/10">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white" dir="ltr">{leads.length}</div>
+              <div className="text-xs text-slate-400 mt-1">إجمالي العملاء</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-emerald-400" dir="ltr">{convertedLeads}</div>
+              <div className="text-xs text-slate-400 mt-1">متحوّلون</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-amber-400" dir="ltr">{conversionRate}%</div>
+              <div className="text-xs text-slate-400 mt-1">معدل التحويل</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCampaignModal && (
+        <CampaignModal
+          campaign={editCampaign}
+          onClose={() => { setShowCampaignModal(false); setEditCampaign(null); }}
+          onSave={addOrUpdateCampaign}
+        />
+      )}
+
+      {showLeadModal && (
+        <LeadModal onClose={() => setShowLeadModal(false)} onSave={addLead} />
+      )}
+    </div>
+  );
+}
+
+function CampaignModal({ campaign, onClose, onSave }: any) {
+  const [form, setForm] = useState({
+    name: campaign?.name || '',
+    channel: campaign?.channel || '',
+    budget: campaign?.budget || '',
+    spent: campaign?.spent || '',
+    status: campaign?.status || 'active',
+    start_date: campaign?.start_date || new Date().toISOString().slice(0, 10),
+    end_date: campaign?.end_date || '',
+    notes: campaign?.notes || '',
+  });
+  const [err, setErr] = useState('');
+
+  function submit(e: any) {
+    e.preventDefault();
+    if (!form.name.trim()) { setErr('اسم الحملة مطلوب'); return; }
+    onSave({ ...campaign, ...form });
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md grid place-items-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1028] my-8">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+          <h3 className="text-white font-semibold flex items-center gap-2">
+            <Megaphone size={18} className="text-blue-400"/> {campaign ? 'تعديل الحملة' : 'حملة جديدة'}
+          </h3>
+          <button onClick={onClose} className="text-slate-400"><X size={18}/></button>
+        </div>
+        <form onSubmit={submit} className="p-5 space-y-4">
+          <label><span className={label}>اسم الحملة *</span>
+            <input className={inp} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+          <label><span className={label}>القناة</span>
+            <select className={inp} value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })}>
+              <option value="">—</option>
+              {LEAD_SOURCES.map((s) => <option key={s.id} value={s.label}>{s.icon} {s.label}</option>)}
+            </select></label>
+          <div className="grid grid-cols-2 gap-3">
+            <label><span className={label}>الميزانية (ر.س)</span>
+              <input type="number" className={inp} value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} /></label>
+            <label><span className={label}>المصروف (ر.س)</span>
+              <input type="number" className={inp} value={form.spent} onChange={(e) => setForm({ ...form, spent: e.target.value })} /></label>
+          </div>
+          <label><span className={label}>الحالة</span>
+            <select className={inp} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              {Object.entries(CAMPAIGN_STATUS).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}
+            </select></label>
+          <div className="grid grid-cols-2 gap-3">
+            <label><span className={label}>تاريخ البداية</span>
+              <input type="date" className={inp} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></label>
+            <label><span className={label}>تاريخ النهاية</span>
+              <input type="date" className={inp} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} /></label>
+          </div>
+          <label><span className={label}>ملاحظات</span>
+            <textarea rows={2} className={inp} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
+          {err && <div className="rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">{err}</div>}
+          <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+            <button type="button" onClick={onClose} className={btnGhost}>إلغاء</button>
+            <button type="submit" className={btnSm}><Save size={16}/> حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function LeadModal({ onClose, onSave }: any) {
+  const [form, setForm] = useState({ name: '', phone: '', source: 'facebook', notes: '', status: 'new' });
+  const [err, setErr] = useState('');
+  function submit(e: any) {
+    e.preventDefault();
+    if (!form.name.trim()) { setErr('الاسم مطلوب'); return; }
+    onSave(form);
+  }
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md grid place-items-center p-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+          <h3 className="text-white font-semibold">عميل محتمل جديد</h3>
+          <button onClick={onClose} className="text-slate-400"><X size={18}/></button>
+        </div>
+        <form onSubmit={submit} className="p-5 space-y-4">
+          <label><span className={label}>الاسم *</span>
+            <input className={inp} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+          <label><span className={label}>الجوال</span>
+            <input className={inp} dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+          <label><span className={label}>المصدر</span>
+            <select className={inp} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}>
+              {LEAD_SOURCES.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.label}</option>)}
+            </select></label>
+          <label><span className={label}>ملاحظات</span>
+            <textarea rows={2} className={inp} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
+          {err && <div className="rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">{err}</div>}
+          <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+            <button type="button" onClick={onClose} className={btnGhost}>إلغاء</button>
+            <button type="submit" className={btnSm}><Save size={16}/> حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function SettingsPage(){
   const [settingsTab, setSettingsTab] = useState<'doctors'|'treatments'|'users'>('doctors');
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -1176,6 +1698,7 @@ export default function App() {
     { id:'appointments', label:'المواعيد', icon: Calendar, roles:['مدير','طبيب','استقبال'] },
     { id:'surgeries', label:'الجراحات', icon: Stethoscope, roles:['مدير','طبيب'] },
     { id:'implants', label:'الزرعات', icon: Syringe, roles:['مدير','طبيب'] },
+    { id:'marketing', label:'إدارة التسويق', icon: Megaphone, roles:['مدير'] },
     { id:'disease-log', label:'سجل الأمراض', icon: ClipboardList, roles:['مدير','طبيب','استقبال','محاسب'] },
     { id:'reports', label:'التقارير', icon: FileText, roles:['مدير','محاسب'] },
     { id:'settings', label:'الاعدادات', icon: SettingsIcon, roles:['مدير'] },
@@ -1228,15 +1751,4 @@ export default function App() {
           {page==='patient-new' && <PatientForm patient={editItem} onSave={()=>setPage('patients')} onCancel={()=>setPage('patients')} />}
           {page==='patient-detail' && selectedPatient && <PatientDetail patient={selectedPatient} onBack={()=>setPage('patients')} setPage={setPage} setEditItem={setEditItem} />}
           {page==='appointments' && <Appointments setPage={setPage} />}
-          {page==='appointment-new' && <AppointmentForm onSave={()=>setPage('appointments')} onCancel={()=>setPage('appointments')} />}
-          {page==='surgeries' && <Surgeries setPage={setPage} setSelectedPatient={setSelectedPatient} />}
-          {page==='surgery-new' && <SurgeryForm onSave={()=>setPage('surgeries')} onCancel={()=>setPage('surgeries')} />}
-          {page==='implants' && <Implants />}
-          {page==='disease-log' && <DiseaseLog />}
-          {page==='reports' && <Reports />}
-          {page==='settings' && <SettingsPage />}
-        </main>
-      </div>
-    </div>
-  );
-}
+          {page==='appointment-new' && <AppointmentForm onSave={()=>setPage('appointments')} onCancel={()=>setPage('appointments')} />
