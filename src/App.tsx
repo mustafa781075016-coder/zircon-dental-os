@@ -22,12 +22,6 @@ const card = 'rounded-2xl border border-white/10 bg-white/[.03] backdrop-blur-xl
 const label = 'block text-xs text-slate-400 mb-1.5 font-medium';
 const TODAY = new Date().toISOString().slice(0,10);
 
-async function hashPassword(pw: string): Promise<string> {
-  const buf = new TextEncoder().encode(pw + '_zircon_salt_2024');
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
 function fmtDate(d: any) {
   if (!d) return '—';
   const date = new Date(d);
@@ -655,6 +649,7 @@ function SessionBooking({ setPage }: any) {
     </div>
   );
 }
+
 /* ============ DOCTOR DASHBOARD ============ */
 const LS_DOCTOR_TREATMENTS = 'zircon.doctorTreatments.v1';
 const LS_PRESCRIPTIONS = 'zircon.prescriptions.v1';
@@ -665,6 +660,7 @@ function DoctorDashboard({ setPage, setActivePatient }: any) {
   const [doctors, setDoctors] = useState<any[]>([]);
   const [currentDoctor, setCurrentDoctor] = useState('');
   const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [viewMode, setViewMode] = useState<'all' | 'today' | 'date'>('all');
   const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
@@ -706,7 +702,19 @@ function DoctorDashboard({ setPage, setActivePatient }: any) {
     alert('تم الإلغاء');
   }
 
-  const daySessions = sessions.filter((s: any) => s.date === selectedDate && (!currentDoctor || s.doctor === currentDoctor));
+  const daySessions = sessions.filter((s: any) => {
+    if (currentDoctor && s.doctor !== currentDoctor) return false;
+    if (viewMode === 'all') return true;
+    if (viewMode === 'today') return s.date === TODAY;
+    if (viewMode === 'date') return s.date === selectedDate;
+    return true;
+  });
+
+  const sortedSessions = [...daySessions].sort((a: any, b: any) => {
+    const dateCompare = (b.date || '').localeCompare(a.date || '');
+    if (dateCompare !== 0) return dateCompare;
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
+  });
 
   const Icons = [
     { icon: '📋', label: 'بطاقة معاينة', action: () => setPage('doctor-cards'), tone: 'from-blue-500/20 to-indigo-700/10 border-blue-500/30' },
@@ -722,11 +730,18 @@ function DoctorDashboard({ setPage, setActivePatient }: any) {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2"><Stethoscope size={24} className="text-blue-400"/> لوحة تحكم الطبيب</h2>
-            <p className="text-slate-300 text-xs mt-1">مرحباً د. {currentDoctor || 'الطبيب'} — {daySessions.length} مريض في قائمة اليوم</p>
+            <p className="text-slate-300 text-xs mt-1">مرحباً د. {currentDoctor || 'الطبيب'} — {sortedSessions.length} مريض</p>
           </div>
-          <div className="flex gap-2 items-center">
-            <label className="text-xs text-slate-300">التاريخ:</label>
-            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-sm text-white" />
+          <div className="flex gap-2 items-center flex-wrap">
+            <label className="text-xs text-slate-300">عرض:</label>
+            <select value={viewMode} onChange={e => setViewMode(e.target.value as any)} className="rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-sm text-white">
+              <option value="all">كل الحجوزات ({sessions.filter((s:any)=>!currentDoctor || s.doctor === currentDoctor).length})</option>
+              <option value="today">حجوزات اليوم ({sessions.filter((s:any)=>(!currentDoctor || s.doctor === currentDoctor) && s.date === TODAY).length})</option>
+              <option value="date">تاريخ محدد</option>
+            </select>
+            {viewMode === 'date' && (
+              <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-sm text-white" />
+            )}
             <button onClick={() => setRefresh(r => r + 1)} className="rounded-xl bg-white/10 hover:bg-white/20 text-white p-2"><RefreshCw size={16}/></button>
           </div>
         </div>
@@ -743,13 +758,16 @@ function DoctorDashboard({ setPage, setActivePatient }: any) {
 
       <div className={card + ' !p-0 overflow-hidden'}>
         <div className="p-4 border-b border-white/10 flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-bold text-white flex items-center gap-2"><Users size={18} className="text-cyan-400"/> قائمة الانتظار - {daySessions.length}</h3>
-          <span className="text-xs text-slate-400">محتوى اليوم {selectedDate}</span>
+          <h3 className="font-bold text-white flex items-center gap-2"><Users size={18} className="text-cyan-400"/> قائمة الانتظار - {sortedSessions.length}</h3>
+          <span className="text-xs text-slate-400">
+            {viewMode === 'all' ? 'جميع الحجوزات' : viewMode === 'today' ? `حجوزات اليوم ${TODAY}` : `حجوزات ${selectedDate}`}
+          </span>
         </div>
         <div className="overflow-auto">
           <table className="w-full text-sm min-w-[800px]">
             <thead className="bg-white/5 text-slate-400 text-xs">
               <tr>
+                <th className="text-right px-4 py-3">#</th>
                 <th className="text-right px-4 py-3">رقم البطاقة</th>
                 <th className="text-right px-4 py-3">اسم المريض</th>
                 <th className="text-right px-4 py-3">تاريخ الموعد</th>
@@ -758,10 +776,11 @@ function DoctorDashboard({ setPage, setActivePatient }: any) {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {daySessions.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-slate-500"><div className="text-4xl mb-2">⏳</div>لا يوجد مرضى في قائمة الانتظار</td></tr>
-              ) : daySessions.map((s: any) => (
+              {sortedSessions.length === 0 ? (
+                <tr><td colSpan={6} className="p-8 text-center text-slate-500"><div className="text-4xl mb-2">⏳</div>لا يوجد مرضى في قائمة الانتظار<div className="text-xs text-slate-600 mt-2">إجمالي الحجوزات في النظام: {sessions.length}</div></td></tr>
+              ) : sortedSessions.map((s: any, idx: number) => (
                 <tr key={s.id} className="hover:bg-white/5">
+                  <td className="px-4 py-3 text-slate-400 text-xs">#{idx + 1}</td>
                   <td className="px-4 py-3 font-mono text-blue-300 text-xs" dir="ltr">#{s.cardNumber}</td>
                   <td className="px-4 py-3 text-white font-medium">{s.patientName}</td>
                   <td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{s.date}</td>
@@ -782,7 +801,6 @@ function DoctorDashboard({ setPage, setActivePatient }: any) {
     </div>
   );
 }
-
 /* ============ DOCTOR CARDS VIEW ============ */
 function DoctorCardsView({ setPage }: any) {
   const [cards, setCards] = useState<any[]>([]);
@@ -812,7 +830,7 @@ function DoctorCardsView({ setPage }: any) {
   );
 }
 
-/* ============ TREATMENTS LIST ============ */
+/* ============ DOCTOR TREATMENTS LIST ============ */
 function DoctorTreatmentsList({ setPage }: any) {
   const [items, setItems] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem('zircon_treatTypes') || '[{"id":"1","name":"حشو ضوئي","price":2000},{"id":"2","name":"خلع سن","price":1500},{"id":"3","name":"تركيب زيركون","price":8000},{"id":"4","name":"تنظيف جير","price":2000},{"id":"5","name":"علاج عصب","price":5000},{"id":"6","name":"زراعة سن","price":35000}]'); } catch { return []; } });
   return (
@@ -851,7 +869,7 @@ function MedicinesList({ setPage }: any) {
     { id: '5', name: 'ميترونيدازول 250mg', dosage: 'قرص', frequency: '3 مرات يومياً', duration: '5 أيام', notes: 'مع الطعام' },
   ];
   const allItems = items.length > 0 ? items : defaults;
-  function addItem() { if (!form.name.trim()) return; setItems([...items.length > 0 ? items : defaults, { ...form, id: Date.now().toString() }]); setForm({ name: '', dosage: '', frequency: '', duration: '', notes: '' }); }
+  function addItem() { if (!form.name.trim()) return; setItems([...(items.length > 0 ? items : defaults), { ...form, id: Date.now().toString() }]); setForm({ name: '', dosage: '', frequency: '', duration: '', notes: '' }); }
   function delItem(id: string) { setItems((items.length > 0 ? items : defaults).filter((x: any) => x.id !== id)); }
   return (
     <div className="space-y-4">
@@ -932,7 +950,7 @@ function DoctorAppointments({ setPage }: any) {
   );
 }
 
-/* ============ TREATMENT SCREEN (أهم شاشة) ============ */
+/* ============ TREATMENT SCREEN ============ */
 function TreatmentScreen({ activePatient, setPage }: any) {
   const [patient, setPatient] = useState<any>(activePatient || null);
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -945,13 +963,11 @@ function TreatmentScreen({ activePatient, setPage }: any) {
   });
   const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
   const [showJawModal, setShowJawModal] = useState(false);
-  const [showMedicineModal, setShowMedicineModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('general');
   const [searchTreatment, setSearchTreatment] = useState('');
   const [filterView, setFilterView] = useState('all');
-  const [filterTime, setFilterTime] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
@@ -999,12 +1015,11 @@ function TreatmentScreen({ activePatient, setPage }: any) {
   }
 
   function completeTreatment(t: any) {
-    setAllTreatments(allTreatments.map((x: any) => x.id === t.id ? { ...x, completed: true, status: 'completed' } : x));
-    alert('✓ تم إكمال المعالجة');
+    setAllTreatments(allTreatments.map((x: any) => x.id === t.id ? { ...x, completed: !x.completed, status: !x.completed ? 'completed' : 'planned' } : x));
   }
 
   function stopTreatment(t: any) {
-    setAllTreatments(allTreatments.map((x: any) => x.id === t.id ? { ...x, stopped: true } : x));
+    setAllTreatments(allTreatments.map((x: any) => x.id === t.id ? { ...x, stopped: !x.stopped } : x));
   }
 
   function editTreatment(t: any) {
@@ -1076,7 +1091,6 @@ function TreatmentScreen({ activePatient, setPage }: any) {
 
   return (
     <div className="space-y-4">
-      {/* Top buttons */}
       <div className="flex flex-wrap gap-2 items-center">
         <button onClick={() => setPage('dashboard')} className={btnGhost}><ArrowRight size={16}/> رجوع</button>
         <button onClick={() => setCurrentForm({ ...currentForm, treatType: '', cost: 0, teeth: [], diagnosis: '', medicine: '', notes: '' })} className="rounded-xl bg-red-600/80 hover:bg-red-600 text-white px-3 py-2 text-xs">✕ إلغاء معالجة</button>
@@ -1089,7 +1103,6 @@ function TreatmentScreen({ activePatient, setPage }: any) {
         <button onClick={() => { setReportType('general'); setShowReportModal(true); }} className="rounded-xl bg-slate-600/80 hover:bg-slate-600 text-white px-3 py-2 text-xs">تقرير</button>
       </div>
 
-      {/* Patient Header */}
       <div className={card}>
         <div className="grid sm:grid-cols-3 gap-3">
           <div><div className="text-xs text-slate-400">المريض</div><div className="text-white font-bold mt-1">{patient.name}</div><div className="text-xs text-blue-300 font-mono" dir="ltr">#{patient.cardNumber}</div></div>
@@ -1098,7 +1111,6 @@ function TreatmentScreen({ activePatient, setPage }: any) {
         </div>
       </div>
 
-      {/* Current Treatment Form */}
       <div className={card}>
         <h3 className="font-bold text-white mb-4">بيانات المعالجة الحالية</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1141,7 +1153,6 @@ function TreatmentScreen({ activePatient, setPage }: any) {
         </div>
       </div>
 
-      {/* Patient's Previous Treatments */}
       <div className={card + ' !p-0 overflow-hidden'}>
         <div className="p-3 border-b border-white/10 flex flex-wrap justify-between items-center gap-2">
           <h3 className="font-bold text-white text-sm">سجل معالجات المريض - {filteredTreatments.length}</h3>
@@ -1171,12 +1182,8 @@ function TreatmentScreen({ activePatient, setPage }: any) {
                   <td className="px-3 py-2 text-emerald-400" dir="ltr">{t.cost}</td>
                   <td className="px-3 py-2 text-emerald-300">🦷 {t.teeth.join(',')}</td>
                   <td className="px-3 py-2 text-slate-400 text-xs" dir="ltr">{t.date}</td>
-                  <td className="px-3 py-2">
-                    <input type="checkbox" checked={t.completed} onChange={() => completeTreatment(t)} className="w-4 h-4" />
-                  </td>
-                  <td className="px-3 py-2">
-                    <input type="checkbox" checked={t.stopped} onChange={() => stopTreatment(t)} className="w-4 h-4" />
-                  </td>
+                  <td className="px-3 py-2"><input type="checkbox" checked={t.completed} onChange={() => completeTreatment(t)} className="w-4 h-4" /></td>
+                  <td className="px-3 py-2"><input type="checkbox" checked={t.stopped} onChange={() => stopTreatment(t)} className="w-4 h-4" /></td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1">
                       <button onClick={() => editTreatment(t)} className="text-blue-400"><Edit3 size={14}/></button>
@@ -1198,7 +1205,6 @@ function TreatmentScreen({ activePatient, setPage }: any) {
         </div>
       </div>
 
-      {/* Diagnosis Modal */}
       {showDiagnosisModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
@@ -1209,10 +1215,8 @@ function TreatmentScreen({ activePatient, setPage }: any) {
         </div>
       )}
 
-      {/* Jaw Modal */}
       {showJawModal && <JawModalBulk selected={currentForm.teeth} onToggle={(n) => { const has = currentForm.teeth.includes(n); setCurrentForm({ ...currentForm, teeth: has ? currentForm.teeth.filter((x: number) => x !== n) : [...currentForm.teeth, n] }); }} onClose={() => setShowJawModal(false)} treatName={currentForm.treatType} doctorName={doctorName} cost={currentForm.cost} />}
 
-      {/* Session Modal */}
       {showSessionModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
@@ -1227,7 +1231,6 @@ function TreatmentScreen({ activePatient, setPage }: any) {
         </div>
       )}
 
-      {/* Report Modal */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
@@ -1242,7 +1245,7 @@ function TreatmentScreen({ activePatient, setPage }: any) {
     </div>
   );
 }
-/* ============ DASHBOARD (admin/doctor general) ============ */
+/* ============ DASHBOARD (admin/general) ============ */
 function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
   const [stats, setStats] = useState({ patients: 0, today: 0, surgeries: 0, implants: 0, followups: 0, unpaid: 0 });
   const [recent, setRecent] = useState<any[]>([]);
@@ -1799,7 +1802,6 @@ function SettingsPage(){
   const [newTreat, setNewTreat] = useState({name:'', price:500});
   const [newUser, setNewUser] = useState({username:'', password:'', role:'طبيب', doctorName:''});
   const [userSearch, setUserSearch] = useState('');
-  const [editItem, setEditItem] = useState<any>(null);
   useEffect(()=>{ localStorage.setItem('zircon_doctors', JSON.stringify(doctors)) },[doctors]);
   useEffect(()=>{ localStorage.setItem('zircon_treatTypes', JSON.stringify(treatTypes)) },[treatTypes]);
   useEffect(()=>{ localStorage.setItem('zircon_appUsers', JSON.stringify(appUsers)) },[appUsers]);
@@ -1950,4 +1952,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+                                        }
