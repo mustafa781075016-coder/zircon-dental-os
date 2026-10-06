@@ -22,12 +22,6 @@ const card = 'rounded-2xl border border-white/10 bg-white/[.03] backdrop-blur-xl
 const label = 'block text-xs text-slate-400 mb-1.5 font-medium';
 const TODAY = new Date().toISOString().slice(0,10);
 
-async function hashPassword(pw: string): Promise<string> {
-  const buf = new TextEncoder().encode(pw + '_zircon_salt_2024');
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
 function fmtDate(d: any) {
   if (!d) return '—';
   const date = new Date(d);
@@ -595,4 +589,1367 @@ function ReceptionDashboard({ setPage }: any) {
                   </div></td>
                 </tr>))}
             </tbody>
-     
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ SESSION BOOKING ============ */
+function SessionBooking({ setPage }: any) {
+  const [patients, setPatients] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem('zircon_sessions') || '[]'); } catch { return []; } });
+  const [form, setForm] = useState({ patientName: '', doctor: '', date: TODAY });
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  useEffect(() => { localStorage.setItem('zircon_sessions', JSON.stringify(sessions)); }, [sessions]);
+  useEffect(() => { try { setPatients(JSON.parse(localStorage.getItem('zircon_visitCards') || '[]')); } catch {} try { setDoctors(JSON.parse(localStorage.getItem('zircon_doctors') || '[]')); } catch {} }, []);
+  function bookSession() {
+    if (!form.patientName || !form.doctor || !form.date) { alert('أكمل الحقول'); return; }
+    const patient = patients.find((p: any) => p.name === form.patientName);
+    if (sessions.find((s: any) => s.patientName === form.patientName && s.doctor === form.doctor && s.date === form.date)) { alert('يوجد حجز مسبق'); return; }
+    setSessions([...sessions, { id: Date.now().toString(), patientName: form.patientName, cardNumber: patient?.cardNumber || '', doctor: form.doctor, date: form.date, createdAt: new Date().toISOString() }]);
+    setForm({ ...form, patientName: '' }); alert('✓ تم حجز الجلسة');
+  }
+  function removeSession() { if (!selectedSession) { alert('اختر حجزاً أولاً'); return; } if (!confirm(`حذف حجز "${selectedSession.patientName}"؟`)) return; setSessions(sessions.filter((s: any) => s.id !== selectedSession.id)); setSelectedSession(null); }
+  const daySessions = sessions.filter((s: any) => s.date === form.date && (!form.doctor || s.doctor === form.doctor));
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">حجز الجلسات</h2></div>
+      <div className={card}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label className={label}>اسم المريض</label><select value={form.patientName} onChange={e => setForm({ ...form, patientName: e.target.value })} className={inp}><option value="">اختر المريض</option>{patients.map((p: any) => <option key={p.cardNumber} value={p.name}>{p.name} - #{p.cardNumber}</option>)}</select></div>
+          <div><label className={label}>الطبيب</label><select value={form.doctor} onChange={e => setForm({ ...form, doctor: e.target.value })} className={inp}><option value="">اختر</option>{doctors.map((d: any) => <option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
+          <div><label className={label}>التاريخ</label><input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className={inp} /></div>
+        </div>
+        <div className="mt-4 flex gap-2 flex-wrap">
+          <button onClick={bookSession} className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 text-sm flex items-center gap-2"><Check size={18}/> حجز جلسة</button>
+          <button onClick={removeSession} className="rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-2.5 text-sm flex items-center gap-2"><X size={18}/> إزالة الحجز</button>
+        </div>
+      </div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <div className="p-3 border-b border-white/10"><h3 className="font-bold text-white text-sm">حجوزات {form.date} ({daySessions.length})</h3></div>
+        <div className="overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">البطاقة</th><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">الوقت</th><th></th></tr></thead>
+            <tbody className="divide-y divide-white/5">
+              {daySessions.length === 0 ? <tr><td colSpan={5} className="p-6 text-center text-slate-500">لا توجد حجوزات</td></tr> :
+                daySessions.map((s: any) => (<tr key={s.id} onClick={() => setSelectedSession(s)} className={'cursor-pointer ' + (selectedSession?.id === s.id ? 'bg-blue-500/10' : 'hover:bg-white/5')}>
+                  <td className="px-4 py-2 font-mono text-blue-300 text-xs" dir="ltr">#{s.cardNumber}</td>
+                  <td className="px-4 py-2 text-white">{s.patientName}</td>
+                  <td className="px-4 py-2 text-slate-300">{s.doctor}</td>
+                  <td className="px-4 py-2 text-slate-400 text-xs" dir="ltr">{new Date(s.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td className="px-4 py-2">{selectedSession?.id === s.id && <span className="text-xs text-blue-400 font-bold">✓ محدد</span>}</td>
+                </tr>))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ DOCTOR DASHBOARD ============ */
+const LS_DOCTOR_TREATMENTS = 'zircon.doctorTreatments.v1';
+const LS_PRESCRIPTIONS = 'zircon.prescriptions.v1';
+
+function DoctorDashboard({ setPage, setActivePatient }: any) {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [currentDoctor, setCurrentDoctor] = useState('');
+  const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [viewMode, setViewMode] = useState<'all' | 'today' | 'date'>('all');
+  const [refresh, setRefresh] = useState(0);
+
+  useEffect(() => {
+    try { setSessions(JSON.parse(localStorage.getItem('zircon_sessions') || '[]')); } catch {}
+    try { setCards(JSON.parse(localStorage.getItem('zircon_visitCards') || '[]')); } catch {}
+    try { setDoctors(JSON.parse(localStorage.getItem('zircon_doctors') || '[]')); } catch {}
+    try {
+      const u = JSON.parse(localStorage.getItem('zircon_currentUser') || 'null');
+      if (u?.doctorName) setCurrentDoctor(u.doctorName);
+    } catch {}
+  }, [refresh]);
+
+  function findCard(s: any) { return cards.find((c: any) => c.cardNumber === s.cardNumber || c.name === s.patientName); }
+
+  function enterPatient(s: any) {
+    const card = findCard(s);
+    setActivePatient({
+      cardNumber: s.cardNumber, name: s.patientName, doctor: s.doctor,
+      phone: card?.phone || '', age: card?.age || '', gender: card?.gender || '',
+      sessionId: s.id, sessionDate: s.date,
+    });
+    setPage('treatment-screen');
+  }
+
+  function postponeSession(s: any) {
+    if (!confirm(`تأجيل موعد ${s.patientName}؟`)) return;
+    const newDate = prompt('التاريخ الجديد (YYYY-MM-DD):', s.date) || s.date;
+    const updated = sessions.map((x: any) => x.id === s.id ? { ...x, date: newDate } : x);
+    localStorage.setItem('zircon_sessions', JSON.stringify(updated));
+    setSessions(updated);
+    alert('تم التأجيل');
+  }
+
+  function cancelSession(s: any) {
+    if (!confirm(`إلغاء موعد ${s.patientName} نهائياً؟`)) return;
+    const updated = sessions.filter((x: any) => x.id !== s.id);
+    localStorage.setItem('zircon_sessions', JSON.stringify(updated));
+    setSessions(updated);
+    alert('تم الإلغاء');
+  }
+
+  const daySessions = sessions.filter((s: any) => {
+    if (currentDoctor && s.doctor !== currentDoctor) return false;
+    if (viewMode === 'all') return true;
+    if (viewMode === 'today') return s.date === TODAY;
+    if (viewMode === 'date') return s.date === selectedDate;
+    return true;
+  });
+
+  const sortedSessions = [...daySessions].sort((a: any, b: any) => {
+    const dateCompare = (b.date || '').localeCompare(a.date || '');
+    if (dateCompare !== 0) return dateCompare;
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
+  });
+
+  const Icons = [
+    { icon: '📋', label: 'بطاقة معاينة', action: () => setPage('doctor-cards'), tone: 'from-blue-500/20 to-indigo-700/10 border-blue-500/30' },
+    { icon: '🦷', label: 'المعالجة', action: () => alert('اختر مريضاً من القائمة بالدخول'), tone: 'from-emerald-500/20 to-teal-700/10 border-emerald-500/30' },
+    { icon: '📊', label: 'قائمة المعالجات', action: () => setPage('doctor-treatments-list'), tone: 'from-purple-500/20 to-violet-700/10 border-purple-500/30' },
+    { icon: '💊', label: 'قائمة الأدوية', action: () => setPage('medicines-list'), tone: 'from-amber-500/20 to-orange-700/10 border-amber-500/30' },
+    { icon: '📅', label: 'قائمة المواعيد', action: () => setPage('doctor-appointments'), tone: 'from-cyan-500/20 to-blue-700/10 border-cyan-500/30' },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-blue-600/20 to-indigo-700/10 p-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2"><Stethoscope size={24} className="text-blue-400"/> لوحة تحكم الطبيب</h2>
+            <p className="text-slate-300 text-xs mt-1">مرحباً د. {currentDoctor || 'الطبيب'} — {sortedSessions.length} مريض</p>
+          </div>
+          <div className="flex gap-2 items-center flex-wrap">
+            <label className="text-xs text-slate-300">عرض:</label>
+            <select value={viewMode} onChange={e => setViewMode(e.target.value as any)} className="rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-sm text-white">
+              <option value="all">كل الحجوزات ({sessions.filter((s:any)=>!currentDoctor || s.doctor === currentDoctor).length})</option>
+              <option value="today">حجوزات اليوم ({sessions.filter((s:any)=>(!currentDoctor || s.doctor === currentDoctor) && s.date === TODAY).length})</option>
+              <option value="date">تاريخ محدد</option>
+            </select>
+            {viewMode === 'date' && (
+              <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-sm text-white" />
+            )}
+            <button onClick={() => setRefresh(r => r + 1)} className="rounded-xl bg-white/10 hover:bg-white/20 text-white p-2"><RefreshCw size={16}/></button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {Icons.map((ic, i) => (
+          <button key={i} onClick={ic.action} className={'rounded-2xl border bg-gradient-to-br p-5 text-center hover:scale-[1.02] transition ' + ic.tone}>
+            <div className="text-4xl mb-2">{ic.icon}</div>
+            <div className="text-sm font-bold text-white">{ic.label}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <div className="p-4 border-b border-white/10 flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-bold text-white flex items-center gap-2"><Users size={18} className="text-cyan-400"/> قائمة الانتظار - {sortedSessions.length}</h3>
+          <span className="text-xs text-slate-400">
+            {viewMode === 'all' ? 'جميع الحجوزات' : viewMode === 'today' ? `حجوزات اليوم ${TODAY}` : `حجوزات ${selectedDate}`}
+          </span>
+        </div>
+        <div className="overflow-auto">
+          <table className="w-full text-sm min-w-[800px]">
+            <thead className="bg-white/5 text-slate-400 text-xs">
+              <tr>
+                <th className="text-right px-4 py-3">#</th>
+                <th className="text-right px-4 py-3">رقم البطاقة</th>
+                <th className="text-right px-4 py-3">اسم المريض</th>
+                <th className="text-right px-4 py-3">تاريخ الموعد</th>
+                <th className="text-right px-4 py-3">الطبيب المعالج</th>
+                <th className="text-right px-4 py-3">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {sortedSessions.length === 0 ? (
+                <tr><td colSpan={6} className="p-8 text-center text-slate-500"><div className="text-4xl mb-2">⏳</div>لا يوجد مرضى في قائمة الانتظار<div className="text-xs text-slate-600 mt-2">إجمالي الحجوزات في النظام: {sessions.length}</div></td></tr>
+              ) : sortedSessions.map((s: any, idx: number) => (
+                <tr key={s.id} className="hover:bg-white/5">
+                  <td className="px-4 py-3 text-slate-400 text-xs">#{idx + 1}</td>
+                  <td className="px-4 py-3 font-mono text-blue-300 text-xs" dir="ltr">#{s.cardNumber}</td>
+                  <td className="px-4 py-3 text-white font-medium">{s.patientName}</td>
+                  <td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{s.date}</td>
+                  <td className="px-4 py-3 text-slate-300 text-xs">{s.doctor}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button onClick={() => enterPatient(s)} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1"><Check size={14}/> دخول</button>
+                      <button onClick={() => postponeSession(s)} className="px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 text-xs">تأجيل</button>
+                      <button onClick={() => cancelSession(s)} className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-300"><X size={14}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+/* ============ DOCTOR CARDS VIEW ============ */
+function DoctorCardsView({ setPage }: any) {
+  const [cards, setCards] = useState<any[]>([]);
+  const [search, setSearch] = useState('');
+  useEffect(() => { try { setCards(JSON.parse(localStorage.getItem('zircon_visitCards') || '[]')); } catch {} }, []);
+  const filtered = cards.filter((c: any) => !search || (c.name || '').includes(search) || (c.cardNumber || '').includes(search) || (c.phone || '').includes(search));
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">بطاقات المعاينة</h2></div>
+      <div className="relative"><Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث..." className={inp + ' pr-10'} /></div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map((c: any) => (
+          <div key={c.cardNumber} className={card}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-2xl font-mono font-bold text-blue-400" dir="ltr">#{c.cardNumber}</div>
+              <div className={`text-xs px-2 py-1 rounded ${c.completed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{c.completed ? 'مكتمل' : 'جاري'}</div>
+            </div>
+            <div className="text-white font-bold">{c.name}</div>
+            <div className="text-xs text-slate-400 mt-1">العمر: {c.age || '—'} | {c.gender}</div>
+            <div className="text-xs text-slate-300 mt-1" dir="ltr">📞 {c.phone}</div>
+            <div className="text-xs text-slate-400 mt-1">الطبيب: {c.doctor || '—'}</div>
+          </div>
+        ))}
+        {filtered.length === 0 && <div className={card + ' col-span-full text-center text-slate-400'}>لا توجد بطاقات</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ============ DOCTOR TREATMENTS LIST ============ */
+function DoctorTreatmentsList({ setPage }: any) {
+  const [items, setItems] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem('zircon_treatTypes') || '[{"id":"1","name":"حشو ضوئي","price":2000},{"id":"2","name":"خلع سن","price":1500},{"id":"3","name":"تركيب زيركون","price":8000},{"id":"4","name":"تنظيف جير","price":2000},{"id":"5","name":"علاج عصب","price":5000},{"id":"6","name":"زراعة سن","price":35000}]'); } catch { return []; } });
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">قائمة المعالجات والأسعار</h2></div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <table className="w-full text-sm">
+          <thead className="bg-white/5 text-slate-400 text-xs">
+            <tr><th className="text-right px-4 py-3">#</th><th className="text-right px-4 py-3">اسم المعالجة</th><th className="text-right px-4 py-3">السعر (ر.س)</th></tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {items.map((it: any, i: number) => (
+              <tr key={it.id} className="hover:bg-white/5">
+                <td className="px-4 py-3 text-slate-400">{i + 1}</td>
+                <td className="px-4 py-3 text-white font-medium">{it.name}</td>
+                <td className="px-4 py-3 text-emerald-400 font-bold" dir="ltr">{Number(it.price).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ============ MEDICINES LIST ============ */
+function MedicinesList({ setPage }: any) {
+  const [items, setItems] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem(LS_PRESCRIPTIONS) || '[]'); } catch { return []; } });
+  const [form, setForm] = useState({ name: '', dosage: '', frequency: '', duration: '', notes: '' });
+  useEffect(() => { localStorage.setItem(LS_PRESCRIPTIONS, JSON.stringify(items)); }, [items]);
+  const defaults = [
+    { id: '1', name: 'أموكسيسيلين 500mg', dosage: 'كبسولة', frequency: '3 مرات يومياً', duration: '5 أيام', notes: 'بعد الأكل' },
+    { id: '2', name: 'باراسيتامول 500mg', dosage: 'قرص', frequency: 'عند الحاجة', duration: '3 أيام', notes: 'للألم' },
+    { id: '3', name: 'إيبوبروفين 400mg', dosage: 'قرص', frequency: 'كل 8 ساعات', duration: '3 أيام', notes: 'بعد الأكل' },
+    { id: '4', name: 'كلورهيكسيدين غسول', dosage: '10ml', frequency: 'مرتين يومياً', duration: '7 أيام', notes: 'مضمضة' },
+    { id: '5', name: 'ميترونيدازول 250mg', dosage: 'قرص', frequency: '3 مرات يومياً', duration: '5 أيام', notes: 'مع الطعام' },
+  ];
+  const allItems = items.length > 0 ? items : defaults;
+  function addItem() { if (!form.name.trim()) return; setItems([...(items.length > 0 ? items : defaults), { ...form, id: Date.now().toString() }]); setForm({ name: '', dosage: '', frequency: '', duration: '', notes: '' }); }
+  function delItem(id: string) { setItems((items.length > 0 ? items : defaults).filter((x: any) => x.id !== id)); }
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">قائمة الأدوية</h2></div>
+
+      <div className={card}>
+        <h3 className="font-bold text-white mb-3">إضافة دواء</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div className="md:col-span-2"><label className={label}>الاسم *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inp} /></div>
+          <div><label className={label}>الجرعة</label><input value={form.dosage} onChange={e => setForm({ ...form, dosage: e.target.value })} className={inp} /></div>
+          <div><label className={label}>التكرار</label><input value={form.frequency} onChange={e => setForm({ ...form, frequency: e.target.value })} className={inp} /></div>
+          <div><label className={label}>المدة</label><input value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} className={inp} /></div>
+        </div>
+        <div className="mt-2 flex gap-2">
+          <input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="ملاحظات" className={inp + ' !w-96'} />
+          <button onClick={addItem} className={btnSm}><Plus size={16}/> إضافة</button>
+        </div>
+      </div>
+
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <table className="w-full text-sm min-w-[700px]">
+          <thead className="bg-white/5 text-slate-400 text-xs">
+            <tr><th className="text-right px-4 py-3">الدواء</th><th className="text-right px-4 py-3">الجرعة</th><th className="text-right px-4 py-3">التكرار</th><th className="text-right px-4 py-3">المدة</th><th className="text-right px-4 py-3">ملاحظات</th><th></th></tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {allItems.map((m: any) => (
+              <tr key={m.id} className="hover:bg-white/5">
+                <td className="px-4 py-3 text-white font-medium">{m.name}</td>
+                <td className="px-4 py-3 text-slate-300">{m.dosage || '—'}</td>
+                <td className="px-4 py-3 text-slate-300">{m.frequency || '—'}</td>
+                <td className="px-4 py-3 text-slate-300">{m.duration || '—'}</td>
+                <td className="px-4 py-3 text-slate-400 text-xs">{m.notes || '—'}</td>
+                <td className="px-4 py-3"><button onClick={() => delItem(m.id)} className="text-red-400"><Trash2 size={14}/></button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ============ DOCTOR APPOINTMENTS ============ */
+function DoctorAppointments({ setPage }: any) {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+  useEffect(() => {
+    try { setSessions(JSON.parse(localStorage.getItem('zircon_sessions') || '[]')); } catch {}
+    try { setCards(JSON.parse(localStorage.getItem('zircon_visitCards') || '[]')); } catch {}
+  }, []);
+  const sorted = [...sessions].sort((a: any, b: any) => (a.date || '').localeCompare(b.date || ''));
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3"><button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-white"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">قائمة المواعيد</h2></div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <table className="w-full text-sm min-w-[700px]">
+          <thead className="bg-white/5 text-slate-400 text-xs">
+            <tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">البطاقة</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">الجوال</th></tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {sorted.length === 0 ? <tr><td colSpan={5} className="p-6 text-center text-slate-500">لا توجد مواعيد</td></tr> :
+              sorted.map((s: any) => {
+                const card = cards.find((c: any) => c.cardNumber === s.cardNumber);
+                return (
+                  <tr key={s.id} className="hover:bg-white/5">
+                    <td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{s.date}</td>
+                    <td className="px-4 py-3 font-mono text-blue-300 text-xs" dir="ltr">#{s.cardNumber}</td>
+                    <td className="px-4 py-3 text-white">{s.patientName}</td>
+                    <td className="px-4 py-3 text-slate-300 text-xs">{s.doctor}</td>
+                    <td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{card?.phone || '—'}</td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ============ TREATMENT SCREEN ============ */
+function TreatmentScreen({ activePatient, setPage }: any) {
+  const [patient, setPatient] = useState<any>(activePatient || null);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [treatTypes, setTreatTypes] = useState<any[]>([]);
+  const [medicines, setMedicines] = useState<any[]>([]);
+  const [allTreatments, setAllTreatments] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem(LS_DOCTOR_TREATMENTS) || '[]'); } catch { return []; } });
+  const [currentForm, setCurrentForm] = useState<any>({
+    treatType: '', cost: 0, discount: 0, discountType: 'amount', discountRatio: '',
+    diagnosis: '', teeth: [] as number[], medicine: '', sessionDate: TODAY, notes: '', status: 'planned',
+  });
+  const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
+  const [showJawModal, setShowJawModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportType, setReportType] = useState('general');
+  const [searchTreatment, setSearchTreatment] = useState('');
+  const [filterView, setFilterView] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  useEffect(() => {
+    try { setDoctors(JSON.parse(localStorage.getItem('zircon_doctors') || '[]')); } catch {}
+    try { setTreatTypes(JSON.parse(localStorage.getItem('zircon_treatTypes') || '[{"id":"1","name":"حشو ضوئي","price":2000},{"id":"2","name":"خلع سن","price":1500},{"id":"3","name":"تركيب زيركون","price":8000},{"id":"4","name":"تنظيف جير","price":2000},{"id":"5","name":"علاج عصب","price":5000}]')); } catch {}
+    try { setMedicines(JSON.parse(localStorage.getItem(LS_PRESCRIPTIONS) || '[]')); } catch {}
+  }, []);
+
+  useEffect(() => { localStorage.setItem(LS_DOCTOR_TREATMENTS, JSON.stringify(allTreatments)); }, [allTreatments]);
+
+  if (!patient) return (
+    <div className="space-y-4">
+      <button onClick={() => setPage('dashboard')} className={btnGhost}><ArrowRight size={18}/> رجوع</button>
+      <div className={card + ' text-center text-slate-400 py-12'}>لم يتم اختيار مريض. الرجاء الدخول من قائمة الانتظار.</div>
+    </div>
+  );
+
+  const doctorName = patient.doctor || 'د. الطبيب';
+
+  function saveTreatment() {
+    if (!currentForm.treatType || currentForm.teeth.length === 0) { alert('اختر نوع المعالجة والأسنان'); return; }
+    const newT: any = {
+      id: Date.now().toString(),
+      patientId: patient.cardNumber,
+      patientName: patient.name,
+      doctorName: doctorName,
+      treatmentType: currentForm.treatType,
+      cost: Number(currentForm.cost),
+      discount: Number(currentForm.discount),
+      discountType: currentForm.discountType,
+      discountRatio: currentForm.discountRatio,
+      diagnosis: currentForm.diagnosis,
+      teeth: currentForm.teeth,
+      medicine: currentForm.medicine,
+      date: currentForm.sessionDate,
+      notes: currentForm.notes,
+      completed: false,
+      stopped: false,
+      status: 'planned',
+      createdAt: new Date().toISOString(),
+    };
+    setAllTreatments([newT, ...allTreatments]);
+    alert('✓ تم حفظ المعالجة');
+    setCurrentForm({ treatType: '', cost: 0, discount: 0, discountType: 'amount', discountRatio: '', diagnosis: '', teeth: [], medicine: '', sessionDate: TODAY, notes: '', status: 'planned' });
+  }
+
+  function completeTreatment(t: any) {
+    setAllTreatments(allTreatments.map((x: any) => x.id === t.id ? { ...x, completed: !x.completed, status: !x.completed ? 'completed' : 'planned' } : x));
+  }
+
+  function stopTreatment(t: any) {
+    setAllTreatments(allTreatments.map((x: any) => x.id === t.id ? { ...x, stopped: !x.stopped } : x));
+  }
+
+  function editTreatment(t: any) {
+    setCurrentForm({
+      treatType: t.treatmentType, cost: t.cost, discount: t.discount, discountType: t.discountType,
+      discountRatio: t.discountRatio, diagnosis: t.diagnosis, teeth: t.teeth, medicine: t.medicine,
+      sessionDate: t.date, notes: t.notes, status: t.status,
+    });
+  }
+
+  function deleteTreatment(t: any) {
+    if (!confirm('حذف المعالجة؟')) return;
+    setAllTreatments(allTreatments.filter((x: any) => x.id !== t.id));
+  }
+
+  function transferToAccounts() {
+    const patientT = allTreatments.filter((t: any) => t.patientId === patient.cardNumber && t.completed);
+    if (patientT.length === 0) { alert('لا توجد معالجات مكتملة للترحيل'); return; }
+    try {
+      const existing = JSON.parse(localStorage.getItem('zircon_accountsPending') || '[]');
+      const merged = [...existing, ...patientT.filter((t: any) => !existing.find((e: any) => e.id === t.id))];
+      localStorage.setItem('zircon_accountsPending', JSON.stringify(merged));
+      alert(`✓ تم ترحيل ${patientT.length} معالجة للحسابات`);
+    } catch {}
+  }
+
+  function undoLast() { if (allTreatments.length === 0) { alert('لا يوجد شي للتراجع'); return; } setAllTreatments(allTreatments.slice(1)); }
+
+  function printPriceQuote(detailed: boolean) {
+    const teethList = currentForm.teeth.join(', ');
+    const total = Number(currentForm.cost) - Number(currentForm.discount);
+    const html = `<html dir="rtl"><head><title>عرض سعر</title><style>body{font-family:Cairo,Arial,sans-serif;padding:30px;background:#fff;color:#000}h1{text-align:center;font-size:22px;border-bottom:2px solid #000;padding-bottom:10px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #999;padding:8px;text-align:right}th{background:#eee}.total{font-size:18px;font-weight:bold;color:#0066cc;margin-top:15px;text-align:left}</style></head><body>
+    <h1>عرض سعر معالجة</h1>
+    <p><b>المريض:</b> ${patient.name} | <b>رقم البطاقة:</b> #${patient.cardNumber}</p>
+    <p><b>الطبيب:</b> ${doctorName} | <b>التاريخ:</b> ${currentForm.sessionDate}</p>
+    <table><thead><tr><th>المعالجة</th><th>الأسنان</th><th>السعر</th></tr></thead><tbody>
+    <tr><td>${currentForm.treatType}</td><td>${teethList}</td><td>${currentForm.cost}</td></tr>
+    ${detailed && currentForm.diagnosis ? `<tr><td colspan="3"><b>التشخيص:</b> ${currentForm.diagnosis}</td></tr>` : ''}
+    </tbody></table>
+    ${Number(currentForm.discount) > 0 ? `<p>الخصم: ${currentForm.discount}</p>` : ''}
+    <div class="total">الإجمالي: ${total} ر.س</div>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
+  }
+
+  function printReport() {
+    const patientT = allTreatments.filter((t: any) => t.patientId === patient.cardNumber);
+    const rows = patientT.map((t: any) => `<tr><td>${t.treatmentType}</td><td>${t.doctorName}</td><td>${t.cost}</td><td>${t.teeth.join(',')}</td><td>${t.date}</td></tr>`).join('');
+    const html = `<html dir="rtl"><head><title>تقرير معالجات</title><style>body{font-family:Cairo,Arial,sans-serif;padding:30px;background:#fff;color:#000}h1{text-align:center;border-bottom:2px solid #000;padding-bottom:10px}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:12px}th,td{border:1px solid #999;padding:6px;text-align:right}th{background:#eee}</style></head><body>
+    <h1>تقرير معالجات - ${reportType === 'general' ? 'عام' : reportType === 'detailed' ? 'تفصيلي' : 'جدولي'}</h1>
+    <p><b>المريض:</b> ${patient.name} | #${patient.cardNumber} | <b>الطبيب:</b> ${doctorName}</p>
+    <table><thead><tr><th>المعالجة</th><th>الطبيب</th><th>التكلفة</th><th>الأسنان</th><th>التاريخ</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
+  }
+
+  const patientTreatments = allTreatments.filter((t: any) => t.patientId === patient.cardNumber);
+  const filteredTreatments = patientTreatments.filter((t: any) => {
+    if (filterView === 'stopped' && !t.stopped) return false;
+    if (filterView === 'completed' && !t.completed) return false;
+    if (filterStatus === 'completed' && !t.completed) return false;
+    if (filterStatus === 'incomplete' && t.completed) return false;
+    if (searchTreatment && !t.treatmentType.includes(searchTreatment)) return false;
+    return true;
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 items-center">
+        <button onClick={() => setPage('dashboard')} className={btnGhost}><ArrowRight size={16}/> رجوع</button>
+        <button onClick={() => setCurrentForm({ ...currentForm, treatType: '', cost: 0, teeth: [], diagnosis: '', medicine: '', notes: '' })} className="rounded-xl bg-red-600/80 hover:bg-red-600 text-white px-3 py-2 text-xs">✕ إلغاء معالجة</button>
+        <button onClick={() => setShowSessionModal(true)} className="rounded-xl bg-cyan-600/80 hover:bg-cyan-600 text-white px-3 py-2 text-xs">+ إضافة جلسة</button>
+        <button onClick={saveTreatment} className={btnSm + ' !text-xs'}><Save size={14}/> حفظ معالجة</button>
+        <button onClick={() => editTreatment(filteredTreatments[0])} disabled={filteredTreatments.length === 0} className="rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white px-3 py-2 text-xs disabled:opacity-40">تعديل معالجة</button>
+        <button onClick={undoLast} className="rounded-xl bg-amber-600/80 hover:bg-amber-600 text-white px-3 py-2 text-xs">↶ التراجع</button>
+        <button onClick={() => printPriceQuote(false)} className="rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white px-3 py-2 text-xs">عرض سعر عام</button>
+        <button onClick={() => printPriceQuote(true)} className="rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white px-3 py-2 text-xs">عرض سعر الحالة</button>
+        <button onClick={() => { setReportType('general'); setShowReportModal(true); }} className="rounded-xl bg-slate-600/80 hover:bg-slate-600 text-white px-3 py-2 text-xs">تقرير</button>
+      </div>
+
+      <div className={card}>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div><div className="text-xs text-slate-400">المريض</div><div className="text-white font-bold mt-1">{patient.name}</div><div className="text-xs text-blue-300 font-mono" dir="ltr">#{patient.cardNumber}</div></div>
+          <div><div className="text-xs text-slate-400">رقم المعاينة</div><div className="text-white font-mono mt-1" dir="ltr">#{patient.cardNumber}</div></div>
+          <div><div className="text-xs text-slate-400">الطبيب المعالج</div><div className="text-white mt-1">{doctorName}</div></div>
+        </div>
+      </div>
+
+      <div className={card}>
+        <h3 className="font-bold text-white mb-4">بيانات المعالجة الحالية</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className={label}>نوع المعالجة *</label>
+            <select value={currentForm.treatType} onChange={e => {
+              const t = treatTypes.find((x: any) => x.name === e.target.value);
+              setCurrentForm({ ...currentForm, treatType: e.target.value, cost: t?.price || 0 });
+            }} className={inp}>
+              <option value="">اختر المعالجة</option>
+              {treatTypes.map((t: any) => <option key={t.id} value={t.name}>{t.name}</option>)}
+            </select>
+          </div>
+          <div><label className={label}>تكلفة المعالجة</label><input type="number" value={currentForm.cost} onChange={e => setCurrentForm({ ...currentForm, cost: Number(e.target.value) })} className={inp} /></div>
+          <div><label className={label}>تاريخ المعالجة</label><input type="date" value={currentForm.sessionDate} onChange={e => setCurrentForm({ ...currentForm, sessionDate: e.target.value })} className={inp} /></div>
+          <div><label className={label}>الخصم (مبلغ)</label><input type="number" value={currentForm.discount} onChange={e => setCurrentForm({ ...currentForm, discount: Number(e.target.value), discountType: 'amount' })} className={inp} /></div>
+          <div><label className={label}>نسبة العيادة / الطبيب</label><input value={currentForm.discountRatio} onChange={e => setCurrentForm({ ...currentForm, discountRatio: e.target.value })} placeholder="مثال: 67 / 50" className={inp} /></div>
+          <div><label className={label}>التشخيص + صورة السن</label>
+            <button onClick={() => setShowDiagnosisModal(true)} className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-xs text-white hover:bg-white/10 flex items-center justify-center gap-2">
+              📝 {currentForm.diagnosis ? currentForm.diagnosis.slice(0, 30) : 'كتابة التشخيص'}
+            </button>
+          </div>
+          <div><label className={label}>قائمة الأسنان *</label>
+            <button onClick={() => setShowJawModal(true)} className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-xs text-white hover:bg-white/10">
+              🦷 {currentForm.teeth.length > 0 ? `${currentForm.teeth.length} أسنان: ${currentForm.teeth.join(',')}` : 'اختر الأسنان'}
+            </button>
+          </div>
+          <div><label className={label}>الأدوية</label>
+            <select value={currentForm.medicine} onChange={e => setCurrentForm({ ...currentForm, medicine: e.target.value })} className={inp}>
+              <option value="">اختر دواء</option>
+              {medicines.map((m: any) => <option key={m.id} value={m.name}>{m.name} - {m.dosage}</option>)}
+            </select>
+          </div>
+          <div><label className={label}>ملاحظات</label><input value={currentForm.notes} onChange={e => setCurrentForm({ ...currentForm, notes: e.target.value })} className={inp} /></div>
+        </div>
+        <div className="mt-4 flex gap-2 flex-wrap">
+          <button onClick={saveTreatment} className={btnSm}><Save size={16}/> حفظ معالجة</button>
+          <button onClick={transferToAccounts} className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 text-sm flex items-center gap-2">💰 ترحيل إلى الحسابات</button>
+          <button onClick={() => alert('سيتم رفع ملف')} className={btnGhost}>📎 إضافة ملف للمريض</button>
+        </div>
+      </div>
+
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <div className="p-3 border-b border-white/10 flex flex-wrap justify-between items-center gap-2">
+          <h3 className="font-bold text-white text-sm">سجل معالجات المريض - {filteredTreatments.length}</h3>
+          <input value={searchTreatment} onChange={e => setSearchTreatment(e.target.value)} placeholder="بحث..." className="rounded-xl bg-white/5 border border-white/10 px-3 py-1.5 text-xs w-40 text-white" />
+        </div>
+        <div className="overflow-auto">
+          <table className="w-full text-sm min-w-[900px]">
+            <thead className="bg-white/5 text-slate-400 text-xs">
+              <tr>
+                <th className="text-right px-3 py-3">المعالجة</th>
+                <th className="text-right px-3 py-3">الطبيب</th>
+                <th className="text-right px-3 py-3">التكلفة</th>
+                <th className="text-right px-3 py-3">السن</th>
+                <th className="text-right px-3 py-3">التاريخ</th>
+                <th className="text-right px-3 py-3">تمت</th>
+                <th className="text-right px-3 py-3">متوقفة</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filteredTreatments.length === 0 ? (
+                <tr><td colSpan={8} className="p-6 text-center text-slate-500">لا توجد معالجات</td></tr>
+              ) : filteredTreatments.map((t: any) => (
+                <tr key={t.id} className="hover:bg-white/5">
+                  <td className="px-3 py-2 text-white">{t.treatmentType}</td>
+                  <td className="px-3 py-2 text-slate-300">{t.doctorName}</td>
+                  <td className="px-3 py-2 text-emerald-400" dir="ltr">{t.cost}</td>
+                  <td className="px-3 py-2 text-emerald-300">🦷 {t.teeth.join(',')}</td>
+                  <td className="px-3 py-2 text-slate-400 text-xs" dir="ltr">{t.date}</td>
+                  <td className="px-3 py-2"><input type="checkbox" checked={t.completed} onChange={() => completeTreatment(t)} className="w-4 h-4" /></td>
+                  <td className="px-3 py-2"><input type="checkbox" checked={t.stopped} onChange={() => stopTreatment(t)} className="w-4 h-4" /></td>
+                  <td className="px-3 py-2">
+                    <div className="flex gap-1">
+                      <button onClick={() => editTreatment(t)} className="text-blue-400"><Edit3 size={14}/></button>
+                      <button onClick={() => deleteTreatment(t)} className="text-red-400"><Trash2 size={14}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="p-3 border-t border-white/10 flex flex-wrap gap-2 items-center">
+          <Filter size={14} className="text-slate-500"/>
+          <button onClick={() => setFilterView(filterView === 'stopped' ? 'all' : 'stopped')} className={'px-3 py-1.5 rounded-lg text-xs ' + (filterView === 'stopped' ? 'bg-amber-600 text-white' : 'bg-white/5 text-slate-300')}>عرض المتوقفة</button>
+          <button onClick={() => setFilterView(filterView === 'completed' ? 'all' : 'completed')} className={'px-3 py-1.5 rounded-lg text-xs ' + (filterView === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300')}>عرض المكتملة</button>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 text-xs text-white">
+            <option value="all">الكل</option><option value="completed">أكمل المعالجة</option><option value="incomplete">لم يكمل المعالجة</option>
+          </select>
+        </div>
+      </div>
+
+      {showDiagnosisModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
+            <h3 className="font-bold text-white">التشخيص</h3>
+            <textarea rows={4} value={currentForm.diagnosis} onChange={e => setCurrentForm({ ...currentForm, diagnosis: e.target.value })} className={inp} placeholder="اكتب التشخيص..." />
+            <div className="flex justify-end gap-2"><button onClick={() => setShowDiagnosisModal(false)} className={btnSm}>حفظ</button></div>
+          </div>
+        </div>
+      )}
+
+      {showJawModal && <JawModalBulk selected={currentForm.teeth} onToggle={(n) => { const has = currentForm.teeth.includes(n); setCurrentForm({ ...currentForm, teeth: has ? currentForm.teeth.filter((x: number) => x !== n) : [...currentForm.teeth, n] }); }} onClose={() => setShowJawModal(false)} treatName={currentForm.treatType} doctorName={doctorName} cost={currentForm.cost} />}
+
+      {showSessionModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
+            <h3 className="font-bold text-white">إضافة جلسة جديدة</h3>
+            <label><span className={label}>التاريخ</span><input type="date" value={currentForm.sessionDate} onChange={e => setCurrentForm({ ...currentForm, sessionDate: e.target.value })} className={inp} /></label>
+            <label><span className={label}>ملاحظات</span><textarea rows={2} value={currentForm.notes} onChange={e => setCurrentForm({ ...currentForm, notes: e.target.value })} className={inp} /></label>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowSessionModal(false)} className={btnGhost}>إلغاء</button>
+              <button onClick={() => { saveTreatment(); setShowSessionModal(false); }} className={btnSm}><Save size={16}/> حفظ وإضافة جلسة</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028] p-5 space-y-3">
+            <h3 className="font-bold text-white">اختر نوع التقرير</h3>
+            {[{ id: 'general', lbl: 'تقرير معالجة عام' }, { id: 'detailed', lbl: 'تقرير تفصيلي' }, { id: 'table', lbl: 'تقرير جدولي' }].map((r) => (
+              <button key={r.id} onClick={() => { setReportType(r.id); printReport(); setShowReportModal(false); }} className="w-full rounded-xl bg-white/5 hover:bg-white/10 text-white p-3 text-right text-sm">{r.lbl}</button>
+            ))}
+            <button onClick={() => setShowReportModal(false)} className={btnGhost + ' w-full'}>إلغاء</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+/* ============ DASHBOARD (admin/general) ============ */
+function Dashboard({ setPage }: { setPage: (p:string)=>void }) {
+  const [stats, setStats] = useState({ patients: 0, today: 0, surgeries: 0, implants: 0, followups: 0, unpaid: 0 });
+  const [recent, setRecent] = useState<any[]>([]);
+  const [todayAppts, setTodayAppts] = useState<any[]>([]);
+  const [upcomingFollowups, setUpcomingFollowups] = useState<any[]>([]);
+  useEffect(() => {
+    (async () => {
+      const start = new Date(); start.setHours(0,0,0,0);
+      const end = new Date(); end.setHours(23,59,59,999);
+      const mStart = new Date(); mStart.setDate(1); mStart.setHours(0,0,0,0);
+      const [p, a, s, i, f, inv] = await Promise.all([
+        supabase.from('patients').select('*', { count: 'exact', head: true }),
+        supabase.from('appointments').select('*', { count: 'exact', head: true }).gte('scheduled_start', start.toISOString()).lte('scheduled_start', end.toISOString()),
+        supabase.from('surgeries').select('*', { count: 'exact', head: true }).gte('created_at', mStart.toISOString()),
+        supabase.from('implants').select('*', { count: 'exact', head: true }),
+        supabase.from('follow_ups').select('*', { count: 'exact', head: true }).eq('status','scheduled'),
+        supabase.from('invoices').select('amount').eq('status','unpaid'),
+      ]);
+      setStats({ patients: p.count||0, today: a.count||0, surgeries: s.count||0, implants: i.count||0, followups: f.count||0, unpaid: (inv.data as any)?.reduce((s:number,r:any)=>s+Number(r.amount),0) || 0 });
+      const { data: rp } = await supabase.from('patients').select('*').order('created_at', { ascending: false }).limit(5);
+      setRecent(rp || []);
+      const { data: ta } = await supabase.from('appointments').select('*, patient:patients(full_name)').gte('scheduled_start', start.toISOString()).lte('scheduled_start', end.toISOString()).order('scheduled_start');
+      setTodayAppts(ta || []);
+      const { data: fu } = await supabase.from('follow_ups').select('*, patient:patients(full_name, phone)').eq('status','scheduled').order('scheduled_date').limit(5);
+      setUpcomingFollowups(fu || []);
+    })();
+  }, []);
+  const Stat = ({ icon: Icon, lbl, value, tone }: any) => (
+    <div className={card}><div className={'h-10 w-10 rounded-xl grid place-items-center mb-3 ' + tone}><Icon size={20} /></div><div className="text-2xl font-bold text-white">{value}</div><div className="text-sm text-slate-400 mt-1">{lbl}</div></div>
+  );
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div><h2 className="text-2xl font-bold text-white">لوحة تحكم الزراعة</h2><p className="text-slate-400 mt-1 text-sm">متابعة حالات زراعة الاسنان</p></div>
+        <div className="flex gap-2 flex-wrap"><button onClick={() => setPage('patient-new')} className={btnSm}><Plus size={16}/> مريض</button><button onClick={() => setPage('appointment-new')} className={btnSm}><Plus size={16}/> موعد</button><button onClick={() => setPage('surgery-new')} className={btnSm}><Plus size={16}/> جراحة</button></div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <Stat icon={Users} lbl="اجمالي المرضى" value={stats.patients} tone="bg-blue-500/20 text-blue-300" />
+        <Stat icon={Calendar} lbl="مواعيد اليوم" value={stats.today} tone="bg-emerald-500/20 text-emerald-300" />
+        <Stat icon={Clock} lbl="متابعات قادمة" value={stats.followups} tone="bg-amber-500/20 text-amber-300" />
+        <Stat icon={Stethoscope} lbl="الجراحات هذا الشهر" value={stats.surgeries} tone="bg-purple-500/20 text-purple-300" />
+        <Stat icon={Syringe} lbl="اجمالي الزرعات" value={stats.implants} tone="bg-cyan-500/20 text-cyan-300" />
+        <Stat icon={DollarSign} lbl="مبالغ غير مدفوعة" value={`${stats.unpaid.toLocaleString()} ر.س`} tone="bg-red-500/20 text-red-300" />
+      </div>
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className={card}><h3 className="font-semibold text-white mb-4">احدث المرضى</h3><div className="space-y-2">{recent.map((p:any) => (<div key={p.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0"><div className="h-9 w-9 rounded-full bg-blue-500/20 text-blue-300 grid place-items-center text-sm font-semibold">{p.full_name?.charAt(0)}</div><div className="flex-1 min-w-0"><div className="text-sm text-white truncate">{p.full_name}</div><div className="text-xs text-slate-400" dir="ltr">{p.patient_code}</div></div><a href={`https://wa.me/${p.phone?.replace(/\D/g,'')}`} target="_blank" className="text-emerald-400"><MessageCircle size={16}/></a></div>))}</div></div>
+        <div className={card}><h3 className="font-semibold text-white mb-4">مواعيد اليوم</h3><div className="space-y-2">{todayAppts.length===0 ? <p className="text-sm text-slate-500">لا توجد مواعيد</p> : todayAppts.map((a:any) => (<div key={a.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0"><div className="text-sm font-semibold text-blue-300 w-14" dir="ltr">{new Date(a.scheduled_start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div><div className="flex-1 text-sm text-white truncate">{a.patient?.full_name}</div></div>))}</div></div>
+        <div className={card + ' border-amber-500/20'}><h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Clock size={16} className="text-amber-400"/> متابعات</h3><div className="space-y-2">{upcomingFollowups.length===0 ? <p className="text-sm text-slate-500">لا توجد</p> : upcomingFollowups.map((f:any) => (<div key={f.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0"><div className="flex-1 min-w-0"><div className="text-sm text-white truncate">{f.patient?.full_name}</div><div className="text-xs text-slate-400">{f.follow_type} - {fmtDate(f.scheduled_date)}</div></div><a href={`https://wa.me/${f.patient?.phone?.replace(/\D/g,'')}`} target="_blank" className="h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-300 grid place-items-center"><MessageCircle size={14}/></a></div>))}</div></div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ PATIENTS ============ */
+function Patients({ setPage, setEditItem, setSelectedPatient }: any) {
+  const [list, setList] = useState<any[]>([]); const [search, setSearch] = useState(''); const [loading, setLoading] = useState(true);
+  const load = useCallback(async ()=>{ setLoading(true); let q = supabase.from('patients').select('*').order('created_at', { ascending: false }).limit(100); if (search) q = q.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%,patient_code.ilike.%${search}%`); const { data } = await q; setList(data || []); setLoading(false); }, [search]);
+  useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
+  async function del(id: string) { if (!confirm('حذف المريض؟')) return; await supabase.from('patients').delete().eq('id', id); load(); }
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[240px]"><Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث..." className={inp + ' pr-10'} /></div>
+        <button onClick={() => { setEditItem(null); setPage('patient-new'); }} className={btnSm}><Plus size={16}/> مريض جديد</button>
+      </div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        {loading ? <div className="p-8 text-center text-slate-400">جاري التحميل...</div> : list.length === 0 ? <div className="p-8 text-center text-slate-400">لا يوجد مرضى</div> : (
+          <div className="overflow-x-auto"><table className="w-full text-sm">
+            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">الكود</th><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">الجوال</th><th className="text-right px-4 py-3">اجراءات</th></tr></thead>
+            <tbody className="divide-y divide-white/5">
+              {list.map((p:any) => (<tr key={p.id} className="hover:bg-white/5">
+                <td className="px-4 py-3 font-mono text-blue-300 text-xs" dir="ltr">{p.patient_code}</td>
+                <td className="px-4 py-3 text-white font-medium"><button onClick={()=>{ setSelectedPatient(p); setPage('patient-detail'); }} className="hover:text-blue-400">{p.full_name}</button></td>
+                <td className="px-4 py-3 text-slate-300" dir="ltr">{p.phone}</td>
+                <td className="px-4 py-3"><div className="flex gap-2"><button onClick={() => { setEditItem(p); setPage('patient-new'); }} className="text-blue-400"><Edit3 size={16}/></button><button onClick={() => del(p.id)} className="text-red-400"><Trash2 size={16}/></button></div></td>
+              </tr>))}
+            </tbody>
+          </table></div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PatientForm({ patient, onSave, onCancel }: any) {
+  const isEdit = !!patient?.id;
+  const [form, setForm] = useState({ full_name: patient?.full_name || '', phone: patient?.phone || '', medical_alerts: patient?.medical_alerts || '', notes: patient?.notes || '', gender: patient?.gender || '', date_of_birth: patient?.date_of_birth || '' });
+  const [err, setErr] = useState(''); const [loading, setLoading] = useState(false);
+  async function submit(e: any) {
+    e.preventDefault(); setErr('');
+    if (!form.full_name.trim() || !form.phone.trim()) { setErr('الاسم والجوال مطلوبان'); return; }
+    setLoading(true);
+    const payload: any = { full_name: form.full_name.trim(), phone: form.phone.trim(), gender: form.gender || null, date_of_birth: form.date_of_birth || null, medical_alerts: form.medical_alerts || null, notes: form.notes || null };
+    let res = isEdit ? await supabase.from('patients').update(payload).eq('id', patient.id) : await supabase.from('patients').insert(payload);
+    setLoading(false);
+    if (res.error) { setErr(res.error.message); return; }
+    onSave();
+  }
+  return (
+    <form onSubmit={submit} className="space-y-5 max-w-3xl">
+      <div className="flex items-center gap-3"><button type="button" onClick={onCancel} className="text-slate-400"><ArrowRight size={20}/></button><h2 className="text-xl font-bold text-white">{isEdit ? 'تعديل المريض' : 'اضافة مريض جديد'}</h2></div>
+      <div className={card}><div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label><span className={label}>الاسم *</span><input className={inp} value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></label>
+        <label><span className={label}>الجوال *</span><input className={inp} dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required /></label>
+        <label><span className={label}>الجنس</span><select className={inp} value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}><option value="">—</option><option value="male">ذكر</option><option value="female">انثى</option></select></label>
+        <label><span className={label}>تاريخ الميلاد</span><input className={inp} type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} /></label>
+        <label className="md:col-span-2"><span className={label}>تنبيهات طبية</span><textarea className={inp} rows={2} value={form.medical_alerts} onChange={(e) => setForm({ ...form, medical_alerts: e.target.value })} /></label>
+      </div></div>
+      {err && <div className="rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">{err}</div>}
+      <div className="flex gap-3"><button type="submit" disabled={loading} className={btnSm + ' !px-6 !py-2.5'}>{loading ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>} حفظ</button><button type="button" onClick={onCancel} className={btnGhost}>الغاء</button></div>
+    </form>
+  );
+}
+
+function PatientDetail({ patient, onBack, setPage, setEditItem }: any) {
+  const [tab, setTab] = useState('overview');
+  const [surgeries, setSurgeries] = useState<any[]>([]);
+  const [implants, setImplants] = useState<any[]>([]);
+  const [followups, setFollowups] = useState<any[]>([]);
+  const [treatments, setTreatments] = useState<any[]>([]);
+  const [showImplantModal, setShowImplantModal] = useState(false);
+  const [selectedTooth, setSelectedTooth] = useState<number>(11);
+  const load = useCallback(async()=>{
+    const [s, i, f, t] = await Promise.all([
+      supabase.from('surgeries').select('*').eq('patient_id', patient.id).order('created_at',{ascending:false}),
+      supabase.from('implants').select('*').eq('patient_id', patient.id).order('created_at',{ascending:false}),
+      supabase.from('follow_ups').select('*').eq('patient_id', patient.id).order('scheduled_date'),
+      supabase.from('treatments').select('*').eq('patient_id', patient.id).order('created_at',{ascending:false}),
+    ]);
+    setSurgeries(s.data||[]); setImplants(i.data||[]); setFollowups(f.data||[]); setTreatments(t.data||[]);
+  },[patient.id]);
+  useEffect(()=>{ load(); },[load]);
+  function handleToothClick(tooth: number) { setSelectedTooth(tooth); if (surgeries.length===0) { alert('انشئ جراحة اولا'); return; } setShowImplantModal(true); }
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3 flex-wrap">
+        <button onClick={onBack} className="text-slate-400"><ArrowRight size={20}/></button>
+        <h2 className="text-xl font-bold text-white">{patient.full_name}</h2>
+        <span className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-300 font-mono" dir="ltr">{patient.patient_code}</span>
+        <div className="flex-1" />
+        <a href={`https://wa.me/${patient.phone?.replace(/\D/g,'')}`} target="_blank" className={btnSm + ' !bg-emerald-600'}><MessageCircle size={16}/> واتساب</a>
+        <button onClick={()=>{ setEditItem(patient); setPage('patient-new'); }} className={btnGhost}><Edit3 size={16}/> تعديل</button>
+      </div>
+      <div className="border-b border-white/10 overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
+          {[{id:'overview', label:'نظرة عامة'},{id:'chart', label:`مخطط (${implants.length})`},{id:'treatments', label:`معالجات (${treatments.length})`},{id:'surgeries', label:`جراحات (${surgeries.length})`},{id:'followups', label:`متابعات (${followups.length})`}].map(t=><button key={t.id} onClick={() => setTab(t.id)} className={'px-4 py-2.5 text-sm border-b-2 whitespace-nowrap ' + (tab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-slate-400')}>{t.label}</button>)}
+        </div>
+      </div>
+      {tab==='overview' && <div className={card}><div className="grid grid-cols-3 gap-3 text-center">
+        <div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-white">{surgeries.length}</div><div className="text-xs text-slate-400">جراحات</div></div>
+        <div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-emerald-400">{implants.length}</div><div className="text-xs text-slate-400">زرعات</div></div>
+        <div className="rounded-xl bg-white/5 p-3"><div className="text-xl font-bold text-amber-400">{followups.length}</div><div className="text-xs text-slate-400">متابعات</div></div>
+      </div></div>}
+      {tab==='chart' && <div className="space-y-4">
+        <ToothChart implants={implants} onToothClick={handleToothClick}/>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{implants.map((im:any)=><div key={im.id} className={card}><div className="flex justify-between"><span className="text-2xl font-bold text-emerald-400">{im.tooth_number}</span><span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300">{im.status}</span></div><div className="text-sm text-white mt-1">{im.brand}</div><div className="text-xs text-slate-400 mt-1" dir="ltr">{im.diameter_mm} x {im.length_mm} mm</div></div>)}</div>
+      </div>}
+      {tab==='treatments' && <div className={card + ' !p-0 overflow-hidden'}>
+        <div className="p-4 font-bold text-white">سجل المعالجات - {treatments.length}</div>
+        <div className="overflow-auto"><table className="w-full text-sm">
+          <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">المعالجة</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">السعر</th><th className="text-right px-4 py-3">السن</th><th className="text-right px-4 py-3">الحالة</th></tr></thead>
+          <tbody className="divide-y divide-white/5">{treatments.length===0 ? <tr><td colSpan={5} className="p-6 text-center text-slate-500">لا توجد معالجات</td></tr> :
+            treatments.map((tr:any)=><tr key={tr.id} className="hover:bg-white/5"><td className="px-4 py-2 text-white">{tr.treatment_type}</td><td className="px-4 py-2 text-slate-300">{tr.doctor_name||'—'}</td><td className="px-4 py-2 text-emerald-400">{tr.cost} ر.س</td><td className="px-4 py-2 text-emerald-300">🦷 {tr.tooth_number}</td><td className="px-4 py-2"><span className={`text-xs px-2 py-1 rounded ${tr.status==='completed' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{tr.status}</span></td></tr>)}
+          </tbody>
+        </table></div>
+      </div>}
+      {tab==='surgeries' && <div className="space-y-3">{surgeries.map((s:any)=><div key={s.id} className={card + ' flex justify-between items-center'}><div><div className="text-white font-medium">{s.surgery_type} - {fmtDate(s.scheduled_date)}</div><div className="text-xs text-slate-400">{s.status}</div></div></div>)}</div>}
+      {tab==='followups' && <div className="space-y-3">
+        <button onClick={async()=>{
+          if (surgeries.length===0) { alert('انشئ جراحة اولا'); return; }
+          const base = new Date(surgeries[0].scheduled_date || new Date());
+          const dates = [{type:'فك غرز', days:7},{type:'متابعة التئام', days:14},{type:'كشف اندماج العظم', days:90},{type:'موعد التركيب', days:180}];
+          for (const d of dates) { const dt = new Date(base); dt.setDate(dt.getDate()+d.days); await supabase.from('follow_ups').insert({ patient_id: patient.id, surgery_id: surgeries[0].id, follow_type: d.type, scheduled_date: dt.toISOString().slice(0,10), status:'scheduled' }); }
+          load();
+        }} className={btnSm}><Plus size={16}/> انشاء متابعات تلقائية</button>
+        {followups.map((f:any)=><div key={f.id} className={card + ' flex justify-between items-center'}><div><div className="text-white">{f.follow_type}</div><div className="text-xs text-slate-400">{fmtDate(f.scheduled_date)}</div></div><span className={`text-xs px-2 py-1 rounded ${f.status==='completed' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{f.status}</span></div>)}
+      </div>}
+      {showImplantModal && <ImplantModal surgeryId={surgeries[0]?.id} patientId={patient.id} initialTooth={selectedTooth} onClose={()=>setShowImplantModal(false)} onSave={()=>{ setShowImplantModal(false); load(); }} />}
+    </div>
+  );
+}
+
+/* ============ SURGERIES ============ */
+function Surgeries({ setPage, setSelectedPatient }: any) {
+  const [list, setList] = useState<any[]>([]);
+  useEffect(()=>{ (async()=>{ const {data}=await supabase.from('surgeries').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between"><h2 className="text-xl font-bold text-white">الجراحات</h2><button onClick={()=>setPage('surgery-new')} className={btnSm}><Plus size={16}/> جراحة جديدة</button></div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <table className="w-full text-sm">
+          <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">النوع</th></tr></thead>
+          <tbody className="divide-y divide-white/5">
+            {list.map((s:any)=><tr key={s.id} className="hover:bg-white/5"><td className="px-4 py-3 text-slate-300 text-xs">{fmtDate(s.scheduled_date)}</td><td className="px-4 py-3 text-white"><button onClick={()=>{ setSelectedPatient(s.patient); setPage('patient-detail'); }} className="text-blue-400">{s.patient?.full_name}</button></td><td className="px-4 py-3 text-slate-300 text-xs">{s.surgery_type}</td></tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Appointments({ setPage }: any) {
+  const [list, setList] = useState<any[]>([]);
+  useEffect(()=>{ (async()=>{ const {data}=await supabase.from('appointments').select('*, patient:patients(full_name)').order('scheduled_start',{ascending:false}).limit(100); setList(data||[]); })(); },[]);
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between"><h2 className="text-xl font-bold text-white">المواعيد</h2><button onClick={()=>setPage('appointment-new')} className={btnSm}><Plus size={16}/> موعد جديد</button></div>
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <table className="w-full text-sm">
+          <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">التاريخ</th><th className="text-right px-4 py-3">المريض</th><th className="text-right px-4 py-3">النوع</th></tr></thead>
+          <tbody className="divide-y divide-white/5">
+            {list.map((a:any)=><tr key={a.id} className="hover:bg-white/5"><td className="px-4 py-3 text-slate-300 text-xs">{fmtDateTime(a.scheduled_start)}</td><td className="px-4 py-3 text-white">{a.patient?.full_name}</td><td className="px-4 py-3 text-slate-300 text-xs">{a.appointment_type}</td></tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AppointmentForm({ onSave, onCancel }: any) {
+  const [patients, setPatients] = useState<any[]>([]);
+  const [patientId, setPatientId] = useState('');
+  const [type, setType] = useState('consultation');
+  const [date, setDate] = useState(new Date().toISOString().slice(0,10));
+  const [time, setTime] = useState('10:00');
+  useEffect(()=>{ supabase.from('patients').select('id, full_name').limit(50).then(({data})=>setPatients(data||[])); },[]);
+  async function submit(e:any){
+    e.preventDefault(); const start=new Date(`${date}T${time}`);
+    const {data:u}=await supabase.auth.getUser();
+    await supabase.from('appointments').insert({ patient_id: patientId, doctor_id: u?.user?.id, appointment_type: type, status:'scheduled', scheduled_start: start.toISOString(), duration_minutes:30 });
+    onSave();
+  }
+  return (
+    <form onSubmit={submit} className="space-y-4 max-w-xl">
+      <h2 className="text-xl font-bold text-white">حجز موعد جديد</h2>
+      <div className={card + ' space-y-4'}>
+        <label><span className={label}>المريض *</span><select className={inp} value={patientId} onChange={e=>setPatientId(e.target.value)} required><option value="">اختر مريض</option>{patients.map((p:any)=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label>
+        <label><span className={label}>النوع</span><select className={inp} value={type} onChange={e=>setType(e.target.value)}><option value="consultation">استشارة</option><option value="implant_surgery">جراحة زراعة</option><option value="follow_up">متابعة</option></select></label>
+        <div className="grid grid-cols-2 gap-4">
+          <label><span className={label}>التاريخ</span><input type="date" value={date} onChange={e=>setDate(e.target.value)} className={inp}/></label>
+          <label><span className={label}>الوقت</span><input type="time" value={time} onChange={e=>setTime(e.target.value)} className={inp}/></label>
+        </div>
+      </div>
+      <div className="flex gap-2"><button type="submit" className={btnSm}>حفظ الموعد</button><button type="button" onClick={onCancel} className={btnGhost}>الغاء</button></div>
+    </form>
+  );
+}
+
+function SurgeryForm({ onSave, onCancel }: any) {
+  const [patients, setPatients] = useState<any[]>([]);
+  const [patientId, setPatientId] = useState('');
+  const [type, setType] = useState('single_implant');
+  const [date, setDate] = useState(new Date().toISOString().slice(0,10));
+  useEffect(()=>{ supabase.from('patients').select('id, full_name').limit(50).then(({data})=>setPatients(data||[])); },[]);
+  async function submit(e:any){
+    e.preventDefault(); const {data:u}=await supabase.auth.getUser();
+    const {error}=await supabase.from('surgeries').insert({ patient_id: patientId, doctor_id: u?.user?.id, surgery_type: type, status:'planned', scheduled_date: new Date(date).toISOString() });
+    if(error){ alert(error.message); return; }
+    onSave();
+  }
+  return (
+    <form onSubmit={submit} className="space-y-4 max-w-xl">
+      <h2 className="text-xl font-bold text-white">جراحة جديدة</h2>
+      <div className={card + ' space-y-4'}>
+        <label><span className={label}>المريض *</span><select className={inp} value={patientId} onChange={e=>setPatientId(e.target.value)} required><option value="">اختر مريض</option>{patients.map((p:any)=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label>
+        <label><span className={label}>نوع الجراحة</span><select className={inp} value={type} onChange={e=>setType(e.target.value)}><option value="single_implant">زرعة واحدة</option><option value="multiple_implants">زرعات متعددة</option><option value="full_arch">قوس كامل</option></select></label>
+        <label><span className={label}>التاريخ</span><input type="date" value={date} onChange={e=>setDate(e.target.value)} className={inp}/></label>
+      </div>
+      <div className="flex gap-2"><button type="submit" className={btnSm}>انشاء الجراحة</button><button type="button" onClick={onCancel} className={btnGhost}>الغاء</button></div>
+    </form>
+  );
+}
+
+function ImplantModal({ surgeryId, patientId, initialTooth, onClose, onSave }: any) {
+  const [form, setForm] = useState({ tooth_number: initialTooth||11, brand: 'Straumann', diameter_mm: '4.1', length_mm: '10', torque_ncm: '35', bone_density: 'D2' });
+  const [loading, setLoading] = useState(false);
+  async function submit(e:any){
+    e.preventDefault(); setLoading(true);
+    const { error } = await supabase.from('implants').insert({ patient_id: patientId, surgery_id: surgeryId, tooth_number: form.tooth_number, status:'placed', brand: form.brand, diameter_mm: Number(form.diameter_mm), length_mm: Number(form.length_mm), torque_ncm: Number(form.torque_ncm), bone_density: form.bone_density, placed_at: new Date().toISOString() });
+    setLoading(false);
+    if(error){ alert(error.message); return; }
+    onSave();
+  }
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1733]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10"><h3 className="text-white font-semibold">اضافة زرعة سن {form.tooth_number}</h3><button onClick={onClose} className="text-slate-400"><X size={18}/></button></div>
+        <form onSubmit={submit} className="p-5 grid grid-cols-2 gap-4">
+          <label><span className={label}>السن</span><input type="number" className={inp} value={form.tooth_number} onChange={e=>setForm({...form, tooth_number: Number(e.target.value)})}/></label>
+          <label><span className={label}>الماركة</span><select className={inp} value={form.brand} onChange={e=>setForm({...form, brand: e.target.value})}><option>Straumann</option><option>Nobel Biocare</option><option>Mega Gen</option><option>Osstem</option></select></label>
+          <label><span className={label}>القطر</span><input className={inp} value={form.diameter_mm} onChange={e=>setForm({...form, diameter_mm: e.target.value})}/></label>
+          <label><span className={label}>الطول</span><input className={inp} value={form.length_mm} onChange={e=>setForm({...form, length_mm: e.target.value})}/></label>
+          <label><span className={label}>العزم Ncm</span><input className={inp + ' border-amber-500/40'} value={form.torque_ncm} onChange={e=>setForm({...form, torque_ncm: e.target.value})}/></label>
+          <label><span className={label}>كثافة العظم</span><select className={inp} value={form.bone_density} onChange={e=>setForm({...form, bone_density: e.target.value})}><option>D1</option><option>D2</option><option>D3</option><option>D4</option></select></label>
+          <div className="col-span-2 flex justify-end gap-2 pt-2 border-t border-white/10"><button type="button" onClick={onClose} className={btnGhost}>الغاء</button><button type="submit" disabled={loading} className={btnSm}>{loading && <Loader2 className="animate-spin" size={14}/>} حفظ الزرعة</button></div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Implants() {
+  const [list, setList] = useState<any[]>([]);
+  useEffect(()=>{ supabase.from('implants').select('*, patient:patients(full_name)').order('created_at',{ascending:false}).limit(100).then(({data})=>setList(data||[])); },[]);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold text-white">سجل الزرعات - {list.length}</h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {list.map((im:any)=><div key={im.id} className={card}><div className="text-2xl font-bold text-emerald-400">{im.tooth_number}</div><div className="text-white text-sm">{im.patient?.full_name}</div><div className="text-xs text-slate-400">{im.brand} - {im.diameter_mm}x{im.length_mm}mm</div></div>)}
+      </div>
+    </div>
+  );
+}
+
+function Reports() {
+  const [stats, setStats] = useState({ patients:0, surgeries:0, implants:0, treatments:0 });
+  useEffect(()=>{ (async()=>{
+    const [p,s,i,t]=await Promise.all([
+      supabase.from('patients').select('*',{count:'exact', head:true}),
+      supabase.from('surgeries').select('*',{count:'exact', head:true}),
+      supabase.from('implants').select('*',{count:'exact', head:true}),
+      supabase.from('treatments').select('*',{count:'exact', head:true}),
+    ]);
+    setStats({ patients: p.count||0, surgeries: s.count||0, implants: i.count||0, treatments: t.count||0 });
+  })(); },[]);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold text-white">التقارير</h2>
+      <div className="grid grid-cols-2 gap-4">
+        <div className={card}><div className="text-2xl font-bold text-white">{stats.patients}</div><div className="text-sm text-slate-400">المرضى</div></div>
+        <div className={card}><div className="text-2xl font-bold text-purple-400">{stats.surgeries}</div><div className="text-sm text-slate-400">الجراحات</div></div>
+        <div className={card}><div className="text-2xl font-bold text-emerald-400">{stats.implants}</div><div className="text-sm text-slate-400">الزرعات</div></div>
+        <div className={card}><div className="text-2xl font-bold text-blue-400">{stats.treatments}</div><div className="text-sm text-slate-400">المعالجات</div></div>
+      </div>
+    </div>
+  );
+}
+/* ============ MARKETING ============ */
+const LS_CAMPAIGNS = 'zircon.marketing.campaigns.v2';
+const LS_LEADS = 'zircon.marketing.leads.v2';
+
+function loadLS(key: string, def: any = []): any {
+  try { return JSON.parse(localStorage.getItem(key) || 'null') || def; } catch { return def; }
+}
+function saveLS(key: string, val: any) { localStorage.setItem(key, JSON.stringify(val)); }
+
+const LEAD_SOURCES = [
+  { id: 'facebook', label: 'فيسبوك', color: 'bg-blue-500/20 text-blue-300', icon: '📘' },
+  { id: 'instagram', label: 'إنستغرام', color: 'bg-pink-500/20 text-pink-300', icon: '📸' },
+  { id: 'tiktok', label: 'تيك توك', color: 'bg-slate-500/20 text-slate-200', icon: '🎵' },
+  { id: 'snapchat', label: 'سناب شات', color: 'bg-yellow-500/20 text-yellow-300', icon: '👻' },
+  { id: 'google', label: 'جوجل', color: 'bg-amber-500/20 text-amber-300', icon: '🔍' },
+  { id: 'whatsapp', label: 'واتساب', color: 'bg-emerald-500/20 text-emerald-300', icon: '💬' },
+  { id: 'referral', label: 'توصية', color: 'bg-purple-500/20 text-purple-300', icon: '🤝' },
+  { id: 'walk_in', label: 'زيارة مباشرة', color: 'bg-cyan-500/20 text-cyan-300', icon: '🚶' },
+  { id: 'phone', label: 'اتصال هاتفي', color: 'bg-indigo-500/20 text-indigo-300', icon: '📞' },
+  { id: 'other', label: 'أخرى', color: 'bg-slate-500/20 text-slate-300', icon: '📌' },
+];
+
+const CAMPAIGN_STATUS: Record<string, [string, string]> = {
+  active: ['نشطة', 'bg-emerald-500/20 text-emerald-300'],
+  paused: ['متوقفة', 'bg-amber-500/20 text-amber-300'],
+  completed: ['منتهية', 'bg-blue-500/20 text-blue-300'],
+  draft: ['مسودة', 'bg-slate-500/20 text-slate-300'],
+};
+
+const LEAD_STATUS: Record<string, [string, string]> = {
+  new: ['جديد', 'bg-blue-500/20 text-blue-300'],
+  contacted: ['تم التواصل', 'bg-amber-500/20 text-amber-300'],
+  booked: ['حجز موعد', 'bg-purple-500/20 text-purple-300'],
+  converted: ['تحوّل لمريض', 'bg-emerald-500/20 text-emerald-300'],
+  lost: ['فقد', 'bg-red-500/20 text-red-300'],
+};
+
+function Marketing() {
+  const [campaigns, setCampaigns] = useState<any[]>(() => loadLS(LS_CAMPAIGNS));
+  const [leads, setLeads] = useState<any[]>(() => loadLS(LS_LEADS));
+  const [tab, setTab] = useState('overview');
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [editCampaign, setEditCampaign] = useState<any>(null);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [stats, setStats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const [p, surg, imp] = await Promise.all([
+        supabase.from('patients').select('id, full_name, phone, created_at').order('created_at', { ascending: false }).limit(500),
+        supabase.from('surgeries').select('id, created_at'),
+        supabase.from('implants').select('id, created_at'),
+      ]);
+      setPatients(p.data || []);
+      const now = new Date(); const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      setStats([
+        { label: 'مرضى هذا الشهر', value: (p.data || []).filter((x: any) => new Date(x.created_at) >= mStart).length },
+        { label: 'جراحات هذا الشهر', value: (surg.data || []).filter((x: any) => new Date(x.created_at) >= mStart).length },
+        { label: 'زرعات هذا الشهر', value: (imp.data || []).filter((x: any) => new Date(x.created_at) >= mStart).length },
+      ]);
+      setLoading(false);
+    })();
+  }, []);
+
+  function persistCampaigns(next: any[]) { setCampaigns(next); saveLS(LS_CAMPAIGNS, next); }
+  function persistLeads(next: any[]) { setLeads(next); saveLS(LS_LEADS, next); }
+  function addOrUpdateCampaign(c: any) { if (c.id) persistCampaigns(campaigns.map((x: any) => (x.id === c.id ? c : x))); else persistCampaigns([{ ...c, id: crypto.randomUUID(), created_at: new Date().toISOString() }, ...campaigns]); setShowCampaignModal(false); setEditCampaign(null); }
+  function delCampaign(id: string) { if (!confirm('حذف الحملة؟')) return; persistCampaigns(campaigns.filter((x: any) => x.id !== id)); }
+  function addLead(l: any) { persistLeads([{ ...l, id: crypto.randomUUID(), created_at: new Date().toISOString() }, ...leads]); setShowLeadModal(false); }
+  function delLead(id: string) { if (!confirm('حذف العميل؟')) return; persistLeads(leads.filter((x: any) => x.id !== id)); }
+  function updateLeadStatus(id: string, status: string) { persistLeads(leads.map((l: any) => (l.id === id ? { ...l, status } : l))); }
+
+  const totalBudget = campaigns.reduce((s, c) => s + (Number(c.budget) || 0), 0);
+  const totalSpent = campaigns.reduce((s, c) => s + (Number(c.spent) || 0), 0);
+  const activeCampaigns = campaigns.filter((c) => c.status === 'active').length;
+  const convertedLeads = leads.filter((l) => l.status === 'converted').length;
+  const conversionRate = leads.length > 0 ? Math.round((convertedLeads / leads.length) * 100) : 0;
+
+  const Stat = ({ icon: Icon, lbl, value, tone, sub }: any) => (
+    <div className={card}><div className={'h-10 w-10 rounded-xl grid place-items-center mb-3 ' + tone}><Icon size={20} /></div><div className="text-2xl font-bold text-white">{value}</div><div className="text-sm text-slate-400 mt-1">{lbl}</div>{sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}</div>
+  );
+
+  return (
+    <div className="space-y-5">
+      <div><h2 className="text-xl font-bold text-white flex items-center gap-2"><Megaphone size={22} className="text-blue-400"/> إدارة التسويق</h2><p className="text-slate-400 text-xs mt-1">إدارة الحملات والعملاء المحتملين</p></div>
+      <div className="border-b border-white/10 overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
+          {[{ id: 'overview', label: 'نظرة عامة' }, { id: 'campaigns', label: `الحملات (${campaigns.length})` }, { id: 'leads', label: `عملاء (${leads.length})` }, { id: 'sources', label: 'المصادر' }, { id: 'funnel', label: 'قمع التحويل' }].map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)} className={'px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition ' + (tab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-slate-400 hover:text-white')}>{t.label}</button>
+          ))}
+        </div>
+      </div>
+      {tab === 'overview' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Stat icon={Megaphone} lbl="الحملات النشطة" value={activeCampaigns} tone="bg-blue-500/20 text-blue-300" sub={`من ${campaigns.length}`} />
+            <Stat icon={Users} lbl="العملاء المحتملون" value={leads.length} tone="bg-emerald-500/20 text-emerald-300" />
+            <Stat icon={Target} lbl="معدل التحويل" value={`${conversionRate}%`} tone="bg-amber-500/20 text-amber-300" sub={`${convertedLeads} متحوّل`} />
+            <Stat icon={DollarSign} lbl="الميزانية المتبقية" value={`${(totalBudget - totalSpent).toLocaleString()} ر.س`} tone="bg-purple-500/20 text-purple-300" />
+          </div>
+          <div className="grid lg:grid-cols-2 gap-5">
+            <div className={card}><h3 className="font-semibold text-white mb-4 flex items-center gap-2"><TrendingUp size={18} className="text-emerald-400"/> أداء العيادة</h3>
+              {loading ? <p className="text-sm text-slate-500">جاري التحميل...</p> : (<div className="space-y-3">{stats.map((s, i) => (<div key={i} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0"><span className="text-sm text-slate-300">{s.label}</span><span className="text-lg font-bold text-white" dir="ltr">{s.value}</span></div>))}</div>)}
+            </div>
+            <div className={card}><h3 className="font-semibold text-white mb-4">آخر الحملات</h3>
+              {campaigns.length === 0 ? <p className="text-sm text-slate-500">لا توجد حملات</p> : (<div className="space-y-2">{campaigns.slice(0, 5).map((c: any) => { const st = CAMPAIGN_STATUS[c.status] || CAMPAIGN_STATUS.draft; return (<div key={c.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0"><div className="flex-1 min-w-0"><div className="text-sm text-white truncate">{c.name}</div><div className="text-xs text-slate-400 mt-0.5">{c.channel || '—'} · {fmtDate(c.start_date)}</div></div><span className={'text-[10px] px-2 py-0.5 rounded border border-white/10 ' + st[1]}>{st[0]}</span></div>); })}</div>)}
+            </div>
+          </div>
+        </div>
+      )}
+      {tab === 'campaigns' && (
+        <div className="space-y-4">
+          <div className="flex justify-end"><button onClick={() => { setEditCampaign(null); setShowCampaignModal(true); }} className={btnSm}><Plus size={16}/> حملة جديدة</button></div>
+          <div className={card + ' !p-0 overflow-hidden'}>
+            {campaigns.length === 0 ? <div className="p-8 text-center text-slate-400">لا توجد حملات</div> : (
+              <div className="overflow-auto"><table className="w-full text-sm min-w-[700px]">
+                <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">القناة</th><th className="text-right px-4 py-3">الميزانية</th><th className="text-right px-4 py-3">المصروف</th><th className="text-right px-4 py-3">المتبقي</th><th className="text-right px-4 py-3">الحالة</th><th className="text-right px-4 py-3">إجراءات</th></tr></thead>
+                <tbody className="divide-y divide-white/5">
+                  {campaigns.map((c: any) => { const st = CAMPAIGN_STATUS[c.status] || CAMPAIGN_STATUS.draft; const remaining = (Number(c.budget) || 0) - (Number(c.spent) || 0); return (<tr key={c.id} className="hover:bg-white/5"><td className="px-4 py-3 text-white">{c.name}</td><td className="px-4 py-3 text-slate-300 text-xs">{c.channel || '—'}</td><td className="px-4 py-3 text-slate-300 text-xs" dir="ltr">{(Number(c.budget) || 0).toLocaleString()}</td><td className="px-4 py-3 text-amber-300 text-xs" dir="ltr">{(Number(c.spent) || 0).toLocaleString()}</td><td className={'px-4 py-3 text-xs ' + (remaining < 0 ? 'text-red-300' : 'text-emerald-300')} dir="ltr">{remaining.toLocaleString()}</td><td className="px-4 py-3"><span className={'text-[11px] px-2 py-1 rounded-md border border-white/10 ' + st[1]}>{st[0]}</span></td><td className="px-4 py-3"><div className="flex gap-2"><button onClick={() => { setEditCampaign(c); setShowCampaignModal(true); }} className="text-blue-400"><Edit3 size={15}/></button><button onClick={() => delCampaign(c.id)} className="text-red-400"><Trash2 size={15}/></button></div></td></tr>); })}
+                </tbody>
+              </table></div>
+            )}
+          </div>
+        </div>
+      )}
+      {tab === 'leads' && (
+        <div className="space-y-4">
+          <div className="flex justify-end"><button onClick={() => setShowLeadModal(true)} className={btnSm}><Plus size={16}/> عميل محتمل</button></div>
+          <div className={card + ' !p-0 overflow-hidden'}>
+            {leads.length === 0 ? <div className="p-8 text-center text-slate-400">لا يوجد عملاء</div> : (
+              <div className="overflow-auto"><table className="w-full text-sm min-w-[800px]">
+                <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">الجوال</th><th className="text-right px-4 py-3">المصدر</th><th className="text-right px-4 py-3">الحالة</th><th className="text-right px-4 py-3">ملاحظات</th><th className="text-right px-4 py-3">إجراءات</th></tr></thead>
+                <tbody className="divide-y divide-white/5">
+                  {leads.map((l: any) => { const src = LEAD_SOURCES.find((s) => s.id === l.source) || LEAD_SOURCES[LEAD_SOURCES.length - 1]; const st = LEAD_STATUS[l.status] || LEAD_STATUS.new; return (<tr key={l.id} className="hover:bg-white/5"><td className="px-4 py-3 text-white">{l.name}</td><td className="px-4 py-3 text-slate-300" dir="ltr"><div className="flex items-center gap-2"><span>{l.phone || '—'}</span>{l.phone && <a href={`https://wa.me/${l.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-emerald-400"><MessageCircle size={14}/></a>}</div></td><td className="px-4 py-3"><span className={'text-[11px] px-2 py-1 rounded ' + src.color}>{src.icon} {src.label}</span></td><td className="px-4 py-3"><select value={l.status || 'new'} onChange={(e) => updateLeadStatus(l.id, e.target.value)} className={'text-[11px] px-2 py-1 rounded border border-white/10 bg-transparent ' + st[1]}>{Object.entries(LEAD_STATUS).map(([k, v]) => <option key={k} value={k} className="bg-slate-800">{v[0]}</option>)}</select></td><td className="px-4 py-3 text-slate-400 text-xs max-w-[180px] truncate">{l.notes || '—'}</td><td className="px-4 py-3"><button onClick={() => delLead(l.id)} className="text-red-400"><Trash2 size={15}/></button></td></tr>); })}
+                </tbody>
+              </table></div>
+            )}
+          </div>
+        </div>
+      )}
+      {tab === 'sources' && (
+        <div className={card}><h3 className="font-semibold text-white mb-4 flex items-center gap-2"><BarChart3 size={18} className="text-blue-400"/> المصادر</h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{LEAD_SOURCES.map((s) => { const leadCount = leads.filter((l: any) => l.source === s.id).length; return (<div key={s.id} className="rounded-xl border border-white/10 bg-white/[.02] p-4 flex items-center justify-between"><div className="flex items-center gap-3"><span className="text-2xl">{s.icon}</span><span className={'text-sm px-2 py-1 rounded ' + s.color}>{s.label}</span></div><div className="text-right"><div className="text-xl font-bold text-white" dir="ltr">{leadCount}</div><div className="text-[10px] text-slate-500">عميل</div></div></div>); })}</div>
+        </div>
+      )}
+      {tab === 'funnel' && (
+        <div className={card}><h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Target size={18} className="text-amber-400"/> قمع التحويل</h3>
+          <div className="space-y-3">{[{ key: 'new', label: 'عملاء جدد', color: 'from-blue-500 to-blue-600' }, { key: 'contacted', label: 'تم التواصل', color: 'from-amber-500 to-amber-600' }, { key: 'booked', label: 'حجز موعد', color: 'from-purple-500 to-purple-600' }, { key: 'converted', label: 'تحوّلوا لمرضى', color: 'from-emerald-500 to-emerald-600' }, { key: 'lost', label: 'فقدوا', color: 'from-red-500 to-red-600' }].map((stage) => { const count = leads.filter((l: any) => (l.status || 'new') === stage.key).length; const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0; return (<div key={stage.key}><div className="flex justify-between text-xs mb-1.5"><span className="text-slate-300">{stage.label}</span><span className="text-white font-bold" dir="ltr">{count} ({pct}%)</span></div><div className="h-3 rounded-full bg-white/5 overflow-hidden"><div className={`h-full bg-gradient-to-l ${stage.color}`} style={{ width: `${pct}%` }} /></div></div>); })}</div>
+        </div>
+      )}
+      {showCampaignModal && <CampaignModal campaign={editCampaign} onClose={() => { setShowCampaignModal(false); setEditCampaign(null); }} onSave={addOrUpdateCampaign} />}
+      {showLeadModal && <LeadModal onClose={() => setShowLeadModal(false)} onSave={addLead} />}
+    </div>
+  );
+}
+
+function CampaignModal({ campaign, onClose, onSave }: any) {
+  const [form, setForm] = useState({ name: campaign?.name || '', channel: campaign?.channel || '', budget: campaign?.budget || '', spent: campaign?.spent || '', status: campaign?.status || 'active', start_date: campaign?.start_date || new Date().toISOString().slice(0, 10), end_date: campaign?.end_date || '', notes: campaign?.notes || '' });
+  const [err, setErr] = useState('');
+  function submit(e: any) { e.preventDefault(); if (!form.name.trim()) { setErr('اسم الحملة مطلوب'); return; } onSave({ ...campaign, ...form }); }
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md grid place-items-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1028] my-8">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10"><h3 className="text-white font-semibold flex items-center gap-2"><Megaphone size={18} className="text-blue-400"/> {campaign ? 'تعديل' : 'حملة جديدة'}</h3><button onClick={onClose} className="text-slate-400"><X size={18}/></button></div>
+        <form onSubmit={submit} className="p-5 space-y-4">
+          <label><span className={label}>اسم الحملة *</span><input className={inp} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+          <label><span className={label}>القناة</span><select className={inp} value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })}><option value="">—</option>{LEAD_SOURCES.map((s) => <option key={s.id} value={s.label}>{s.icon} {s.label}</option>)}</select></label>
+          <div className="grid grid-cols-2 gap-3">
+            <label><span className={label}>الميزانية</span><input type="number" className={inp} value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} /></label>
+            <label><span className={label}>المصروف</span><input type="number" className={inp} value={form.spent} onChange={(e) => setForm({ ...form, spent: e.target.value })} /></label>
+          </div>
+          <label><span className={label}>الحالة</span><select className={inp} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>{Object.entries(CAMPAIGN_STATUS).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select></label>
+          <div className="grid grid-cols-2 gap-3">
+            <label><span className={label}>من</span><input type="date" className={inp} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></label>
+            <label><span className={label}>إلى</span><input type="date" className={inp} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} /></label>
+          </div>
+          <label><span className={label}>ملاحظات</span><textarea rows={2} className={inp} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
+          {err && <div className="rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">{err}</div>}
+          <div className="flex justify-end gap-2 pt-2 border-t border-white/10"><button type="button" onClick={onClose} className={btnGhost}>إلغاء</button><button type="submit" className={btnSm}><Save size={16}/> حفظ</button></div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function LeadModal({ onClose, onSave }: any) {
+  const [form, setForm] = useState({ name: '', phone: '', source: 'facebook', notes: '', status: 'new' });
+  const [err, setErr] = useState('');
+  function submit(e: any) { e.preventDefault(); if (!form.name.trim()) { setErr('الاسم مطلوب'); return; } onSave(form); }
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md grid place-items-center p-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1028]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10"><h3 className="text-white font-semibold">عميل محتمل جديد</h3><button onClick={onClose} className="text-slate-400"><X size={18}/></button></div>
+        <form onSubmit={submit} className="p-5 space-y-4">
+          <label><span className={label}>الاسم *</span><input className={inp} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+          <label><span className={label}>الجوال</span><input className={inp} dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+          <label><span className={label}>المصدر</span><select className={inp} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}>{LEAD_SOURCES.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.label}</option>)}</select></label>
+          <label><span className={label}>ملاحظات</span><textarea rows={2} className={inp} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
+          {err && <div className="rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">{err}</div>}
+          <div className="flex justify-end gap-2 pt-2 border-t border-white/10"><button type="button" onClick={onClose} className={btnGhost}>إلغاء</button><button type="submit" className={btnSm}><Save size={16}/> حفظ</button></div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ============ SETTINGS PAGE ============ */
+function SettingsPage(){
+  const [settingsTab, setSettingsTab] = useState<'doctors'|'treatments'|'users'>('doctors');
+  const [doctors, setDoctors] = useState<any[]>(()=>{ try{ return JSON.parse(localStorage.getItem('zircon_doctors')||'[{"id":"1","name":"د. أحمد الشطبي","specialty":"زراعة"},{"id":"2","name":"د. جلال الداعري","specialty":"تقويم"}]') }catch{ return [] } });
+  const [treatTypes, setTreatTypes] = useState<any[]>(()=>{ try{ return JSON.parse(localStorage.getItem('zircon_treatTypes')||'[{"id":"1","name":"حشو ضوئي","price":2000},{"id":"2","name":"خلع سن","price":1500},{"id":"3","name":"تركيب زيركون","price":8000},{"id":"4","name":"تنظيف جير","price":2000},{"id":"5","name":"علاج عصب","price":5000}]') }catch{ return [] } });
+  const [appUsers, setAppUsers] = useState<any[]>(()=>{ try{ return JSON.parse(localStorage.getItem('zircon_appUsers')||'[{"id":"1","username":"admin","password":"123456","role":"مدير"}]') }catch{ return [] } });
+  const [newDoc, setNewDoc] = useState({name:'', specialty:''});
+  const [newTreat, setNewTreat] = useState({name:'', price:500});
+  const [newUser, setNewUser] = useState({username:'', password:'', role:'طبيب', doctorName:''});
+  const [userSearch, setUserSearch] = useState('');
+  useEffect(()=>{ localStorage.setItem('zircon_doctors', JSON.stringify(doctors)) },[doctors]);
+  useEffect(()=>{ localStorage.setItem('zircon_treatTypes', JSON.stringify(treatTypes)) },[treatTypes]);
+  useEffect(()=>{ localStorage.setItem('zircon_appUsers', JSON.stringify(appUsers)) },[appUsers]);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold text-white">الاعدادات - Zircon OS V2</h2>
+      <div className={card + ' !p-4'}>
+        <div className="flex gap-2 border-b border-white/10 overflow-auto">
+          <button onClick={()=>setSettingsTab('doctors')} className={`px-4 py-2 text-sm border-b-2 whitespace-nowrap ${settingsTab==='doctors'?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>إدارة الأطباء</button>
+          <button onClick={()=>setSettingsTab('treatments')} className={`px-4 py-2 text-sm border-b-2 whitespace-nowrap ${settingsTab==='treatments'?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>إدارة المعالجات</button>
+          <button onClick={()=>setSettingsTab('users')} className={`px-4 py-2 text-sm border-b-2 whitespace-nowrap ${settingsTab==='users'?'border-blue-500 text-white':'border-transparent text-slate-400'}`}>المستخدمون</button>
+        </div>
+        {settingsTab==='doctors' && (
+          <div className="mt-5 space-y-4">
+            <div className="grid md:grid-cols-3 gap-3"><div><label className={label}>اسم الطبيب</label><input value={newDoc.name} onChange={e=>setNewDoc({...newDoc,name:e.target.value})} className={inp}/></div><div><label className={label}>التخصص</label><input value={newDoc.specialty} onChange={e=>setNewDoc({...newDoc,specialty:e.target.value})} className={inp}/></div><div className="flex items-end"><button onClick={()=>{ if(!newDoc.name) return; setDoctors([...doctors,{id:Date.now().toString(),...newDoc}]); setNewDoc({name:'',specialty:''}) }} className={btnSm}><Plus size={16}/> إضافة</button></div></div>
+            <div className="space-y-2">{doctors.map((d:any)=><div key={d.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5"><span className="text-white text-sm">{d.name} - {d.specialty}</span><div className="flex gap-2"><button onClick={()=>setDoctors(doctors.filter((x:any)=>x.id!==d.id))} className="text-red-400"><Trash2 size={14}/></button></div></div>)}</div>
+          </div>
+        )}
+        {settingsTab==='treatments' && (
+          <div className="mt-5 space-y-4">
+            <div className="grid md:grid-cols-3 gap-3"><div><label className={label}>اسم المعالجة</label><input value={newTreat.name} onChange={e=>setNewTreat({...newTreat,name:e.target.value})} className={inp}/></div><div><label className={label}>السعر</label><input type="number" value={newTreat.price} onChange={e=>setNewTreat({...newTreat,price:parseInt(e.target.value)||0})} className={inp}/></div><div className="flex items-end"><button onClick={()=>{ if(!newTreat.name) return; setTreatTypes([...treatTypes,{id:Date.now().toString(),...newTreat}]); setNewTreat({name:'',price:500}) }} className={btnSm}><Plus size={16}/> إضافة</button></div></div>
+            <div className="space-y-2">{treatTypes.map((t:any)=><div key={t.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5"><span className="text-white text-sm">{t.name} - {t.price} ر.س</span><div className="flex gap-2"><button onClick={()=>setTreatTypes(treatTypes.filter((x:any)=>x.id!==t.id))} className="text-red-400"><Trash2 size={14}/></button></div></div>)}</div>
+          </div>
+        )}
+        {settingsTab==='users' && (
+          <div className="mt-5 space-y-4">
+            <div className="rounded-2xl bg-white/[.02] border border-white/10 p-4 space-y-3"><div className="font-semibold text-white flex items-center gap-2"><UserPlus size={18}/> إضافة مستخدم</div>
+              <div className="grid md:grid-cols-4 gap-3">
+                <div><label className={label}>اسم المستخدم *</label><input value={newUser.username} onChange={e=>setNewUser({...newUser,username:e.target.value})} className={inp}/></div>
+                <div><label className={label}>كلمة المرور *</label><input value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} type="password" className={inp}/></div>
+                <div><label className={label}>الدور</label><select value={newUser.role} onChange={e=>setNewUser({...newUser,role:e.target.value})} className={inp}><option>طبيب</option><option>مدير</option><option>استقبال</option><option>محاسب</option></select></div>
+                <div><label className={label}>اسم الطبيب (إن طبيب)</label><select value={newUser.doctorName} onChange={e=>setNewUser({...newUser,doctorName:e.target.value})} className={inp}><option value="">—</option>{doctors.map((d:any)=><option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
+              </div>
+              <button onClick={()=>{ if(!newUser.username||!newUser.password){ alert('ادخل البيانات'); return } setAppUsers([...appUsers,{id:Date.now().toString(),...newUser}]); setNewUser({username:'',password:'',role:'طبيب',doctorName:''}) }} className={btnSm}><Plus size={16}/> إضافة</button>
+            </div>
+            <div className={card + ' !bg-white/[.02]'}><div className="flex justify-between items-center mb-3"><div className="font-bold flex items-center gap-2 text-white"><Users size={18}/> المستخدمون - {appUsers.length}</div><input value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="بحث..." className="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-xs w-40 text-white"/></div>
+              <div className="overflow-auto"><table className="w-full text-sm"><thead className="text-slate-400 text-xs"><tr><th className="p-2 text-right">اسم المستخدم</th><th className="p-2 text-right">الدور</th><th className="p-2 text-right">الطبيب</th><th></th></tr></thead>
+                <tbody>{appUsers.filter((u:any)=> u.username.toLowerCase().includes(userSearch.toLowerCase())).map((u:any)=><tr key={u.id} className="border-t border-white/5"><td className="p-3 text-white">{u.username}</td><td className="p-3"><span className="text-xs px-2 py-1 rounded bg-white/10 text-white">{u.role}</span></td><td className="p-3 text-slate-300 text-xs">{u.doctorName || '—'}</td><td className="p-3 flex gap-1 justify-end"><button onClick={()=>{ if(confirm('حذف؟')) setAppUsers(appUsers.filter((x:any)=>x.id!==u.id)) }} className="p-1.5 rounded bg-red-500/20 text-red-300"><Trash2 size={12}/></button></td></tr>)}</tbody>
+              </table></div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============ MAIN APP ============ */
+export default function App() {
+  const [session, setSession] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(()=>{
+    try{ return JSON.parse(localStorage.getItem('zircon_currentUser')||'null') }catch{ return null }
+  });
+  const [page, setPage] = useState('dashboard');
+  const [editItem, setEditItem] = useState<any>(null);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [activePatient, setActivePatient] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  if (!session && !currentUser) return <Login onLogin={(u:any)=>{
+    if(u){ setCurrentUser(u); setSession({user:u}); } else {
+      supabase.auth.getSession().then(({data}) => { setSession(data.session); try{ setCurrentUser(JSON.parse(localStorage.getItem('zircon_currentUser')||'null')) }catch{} });
+    }
+  }} />;
+
+  const role = currentUser?.role || 'مدير';
+
+  const allMenu = [
+    { id:'dashboard', label:'لوحة التحكم', icon: LayoutDashboard, roles:['مدير','طبيب','استقبال','محاسب'] },
+    { id:'reception-settings', label:'إعدادات الاستقبال', icon: SettingsIcon, roles:['استقبال','مدير'] },
+    { id:'patients', label:'المرضى', icon: Users, roles:['مدير','طبيب','استقبال'] },
+    { id:'treatments-bulk', label:'إضافة معالجات', icon: FileSpreadsheet, roles:['مدير','طبيب'] },
+    { id:'appointments', label:'المواعيد', icon: Calendar, roles:['مدير','طبيب','استقبال'] },
+    { id:'surgeries', label:'الجراحات', icon: Stethoscope, roles:['مدير','طبيب'] },
+    { id:'implants', label:'الزرعات', icon: Syringe, roles:['مدير','طبيب'] },
+    { id:'marketing', label:'إدارة التسويق', icon: Megaphone, roles:['مدير'] },
+    { id:'disease-log', label:'سجل الأمراض', icon: ClipboardList, roles:['مدير','طبيب','استقبال','محاسب'] },
+    { id:'reports', label:'التقارير', icon: FileText, roles:['مدير','محاسب'] },
+    { id:'settings', label:'الإعدادات', icon: SettingsIcon, roles:['مدير'] },
+  ];
+  const menu = allMenu.filter(m=> m.roles.includes(role));
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-[#060a1a] text-white flex">
+      {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={()=>setSidebarOpen(false)} />}
+      <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-64 border-l border-white/10 bg-[#0a1028] p-4 flex flex-col transition-transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3"><div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 grid place-items-center font-bold">Z</div><div><div className="font-bold">Zircon</div><div className="text-[10px] text-slate-400">Dental OS V2</div></div></div>
+          <button onClick={()=>setSidebarOpen(false)} className="lg:hidden text-slate-400"><X size={18}/></button>
+        </div>
+        <nav className="space-y-1 flex-1 overflow-y-auto">
+          {menu.map(m=>(
+            <button key={m.id} onClick={()=>{ setPage(m.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 text-right p-3 rounded-xl text-sm transition ${page===m.id ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'hover:bg-white/5 text-slate-300'}`}>
+              <m.icon size={18}/> {m.label}
+            </button>
+          ))}
+        </nav>
+        <div className="mt-auto space-y-2">
+          <div className="rounded-xl bg-white/5 border border-white/10 p-3">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 grid place-items-center text-xs font-bold">{currentUser?.username?.[0]?.toUpperCase()||'م'}</div>
+              <div><div className="text-sm font-bold text-white">{currentUser?.username}</div><div className="text-[11px] text-slate-400">{role}</div></div>
+            </div>
+          </div>
+          <button onClick={() => { localStorage.removeItem('zircon_currentUser'); supabase.auth.signOut(); setCurrentUser(null); setSession(null); }} className="w-full flex items-center gap-2 text-red-400 p-3 text-sm hover:bg-red-500/10 rounded-xl">
+            <LogOut size={18}/> تسجيل خروج
+          </button>
+        </div>
+      </aside>
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-14 border-b border-white/10 bg-[#0a1028]/50 backdrop-blur-xl flex items-center justify-between px-4">
+          <button onClick={()=>setSidebarOpen(true)} className="lg:hidden text-white"><Menu size={20}/></button>
+          <div className="text-sm text-slate-400 hidden lg:block">مرحبا {currentUser?.username} - دورك: {role}</div>
+          <div className="flex items-center gap-3">
+            <Bell size={18} className="text-slate-400"/>
+            <div className="h-8 w-8 rounded-full bg-blue-500/20 text-blue-300 grid place-items-center text-xs font-bold">{currentUser?.username?.[0]?.toUpperCase()||'م'}</div>
+          </div>
+        </header>
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+          {page==='dashboard' && (role === 'استقبال' ? <ReceptionDashboard setPage={setPage} /> : role === 'طبيب' ? <DoctorDashboard setPage={setPage} setActivePatient={setActivePatient} /> : <Dashboard setPage={setPage} />)}
+          {page==='reception-settings' && <ReceptionSettings />}
+          {page==='session-booking' && <SessionBooking setPage={setPage} />}
+          {page==='doctor-cards' && <DoctorCardsView setPage={setPage} />}
+          {page==='doctor-treatments-list' && <DoctorTreatmentsList setPage={setPage} />}
+          {page==='medicines-list' && <MedicinesList setPage={setPage} />}
+          {page==='doctor-appointments' && <DoctorAppointments setPage={setPage} />}
+          {page==='treatment-screen' && <TreatmentScreen activePatient={activePatient} setPage={setPage} />}
+          {page==='patients' && <Patients setPage={setPage} setEditItem={setEditItem} setSelectedPatient={setSelectedPatient} />}
+          {page==='treatments-bulk' && <TreatmentsBulk />}
+          {page==='patient-new' && <PatientForm patient={editItem} onSave={()=>setPage('patients')} onCancel={()=>setPage('patients')} />}
+          {page==='patient-detail' && selectedPatient && <PatientDetail patient={selectedPatient} onBack={()=>setPage('patients')} setPage={setPage} setEditItem={setEditItem} />}
+          {page==='appointments' && <Appointments setPage={setPage} />}
+          {page==='appointment-new' && <AppointmentForm onSave={()=>setPage('appointments')} onCancel={()=>setPage('appointments')} />}
+          {page==='surgeries' && <Surgeries setPage={setPage} setSelectedPatient={setSelectedPatient} />}
+          {page==='surgery-new' && <SurgeryForm onSave={()=>setPage('surgeries')} onCancel={()=>setPage('surgeries')} />}
+          {page==='implants' && <Implants />}
+          {page==='marketing' && <Marketing />}
+          {page==='disease-log' && <DiseaseLog />}
+          {page==='reports' && <Reports />}
+          {page==='settings' && <SettingsPage />}
+        </main>
+      </div>
+    </div>
+  );
+  }
