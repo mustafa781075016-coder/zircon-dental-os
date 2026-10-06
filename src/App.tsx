@@ -22,6 +22,12 @@ const card = 'rounded-2xl border border-white/10 bg-white/[.03] backdrop-blur-xl
 const label = 'block text-xs text-slate-400 mb-1.5 font-medium';
 const TODAY = new Date().toISOString().slice(0,10);
 
+async function hashPassword(pw: string): Promise<string> {
+  const buf = new TextEncoder().encode(pw + '_zircon_salt_2024');
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
 function fmtDate(d: any) {
   if (!d) return '—';
   const date = new Date(d);
@@ -498,4 +504,95 @@ function ReceptionDashboard({ setPage }: any) {
         <div className={card}><div className="text-xs text-slate-400">قيد المعالجة</div><div className="text-2xl font-bold text-amber-400 mt-1">{cards.filter((c: any) => !c.completed && (c.createdAt || '').slice(0, 10) === TODAY).length}</div></div>
       </div>
       <div className={card + ' !p-0 overflow-hidden'}>
-        <table className="w-f
+        <table className="w-full text-sm"><thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-4 py-3">رقم البطاقة</th><th className="text-right px-4 py-3">الاسم</th><th className="text-right px-4 py-3">الطبيب</th><th className="text-right px-4 py-3">الدفع</th><th className="text-right px-4 py-3">التاريخ</th></tr></thead>
+          <tbody className="divide-y divide-white/5">{cards.filter((c: any) => (c.createdAt || '').slice(0, 10) === TODAY).map((c: any) => (<tr key={c.cardNumber} className="hover:bg-white/5"><td className="px-4 py-2 font-mono text-blue-300 text-xs" dir="ltr">#{c.cardNumber}</td><td className="px-4 py-2 text-white">{c.name}</td><td className="px-4 py-2 text-slate-300">{c.doctor || '—'}</td><td className="px-4 py-2 text-slate-300 text-xs">{c.paymentMethod}</td><td className="px-4 py-2 text-slate-400 text-xs">{fmtDateTime(c.createdAt)}</td></tr>))}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className={card}><div className="text-xs text-slate-400">حالات اليوم</div><div className="text-2xl font-bold text-white mt-1">{todayCount}</div></div>
+        <div className={card}><div className="text-xs text-slate-400">قائمة الانتظار</div><div className="text-2xl font-bold text-amber-400 mt-1">{waitingCount}</div></div>
+        <div className={card}><div className="text-xs text-slate-400">إجمالي الحالات</div><div className="text-2xl font-bold text-blue-400 mt-1">{cards.length}</div></div>
+        <div className={card}><div className="text-xs text-slate-400">التاريخ</div><div className="text-sm font-bold text-white mt-1" dir="ltr">{new Date().toLocaleDateString('en-GB')}</div></div>
+      </div>
+
+      <div className={card}>
+        <h3 className="font-bold text-white mb-3 flex items-center gap-2"><Search size={18} className="text-blue-400"/> البحث عن حالة</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <input placeholder="اسم المريض" value={searchName} onChange={e => setSearchName(e.target.value)} className={inp} />
+          <input placeholder="رقم بطاقة المعاينة" value={searchCard} onChange={e => setSearchCard(e.target.value)} className={inp} />
+          <input placeholder="رقم الجوال" value={searchPhone} onChange={e => setSearchPhone(e.target.value)} className={inp} dir="ltr" />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => {}} className={btnSm}><Search size={16}/> بحث</button>
+          <button onClick={clearSearch} className={btnGhost}>مسح البحث</button>
+          <button onClick={newCard} className={btnSm + ' !bg-emerald-600 hover:!bg-emerald-500'}><Plus size={16}/> إضافة حالة جديدة</button>
+        </div>
+      </div>
+
+      <div className={card}>
+        <h3 className="font-bold text-white mb-3 flex items-center gap-2">{editingCard ? <><Edit3 size={18} className="text-amber-400"/> تعديل حالة - #{editingCard.cardNumber}</> : <><Plus size={18} className="text-emerald-400"/> بيانات حالة جديدة</>}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label className={label}>اسم المريض *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inp} /></div>
+          <div><label className={label}>العمر</label><input type="number" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} className={inp} /></div>
+          <div><label className={label}>النوع</label><select value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })} className={inp}><option>ذكر</option><option>أنثى</option></select></div>
+          <div><label className={label}>رقم التلفون *</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className={inp} dir="ltr" /></div>
+          <div><label className={label}>الطبيب المعالج</label><select value={form.doctor} onChange={e => setForm({ ...form, doctor: e.target.value })} className={inp}><option value="">اختر الطبيب</option>{doctors.map((d: any) => <option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
+          <div><label className={label}>طريقة الدفع</label><select value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })} className={inp}><option>1 - آجل</option><option>2 - نقد</option></select></div>
+          <div><label className={label}>نوع الحوالة</label><select value={form.transferType} onChange={e => setForm({ ...form, transferType: e.target.value })} className={inp}><option value="">—</option><option>حوالة بنكية</option><option>كاش</option><option>شيك</option></select></div>
+          <div><label className={label}>العملة</label><select value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} className={inp}><option>101 - ريال يمني</option><option>102 - ريال سعودي</option><option>103 - دولار</option></select></div>
+          <div><label className={label}>تاريخ التسجيل</label><input type="date" value={form.regDate} onChange={e => setForm({ ...form, regDate: e.target.value })} className={inp} /></div>
+        </div>
+        <div className="mt-3 flex items-center gap-4 flex-wrap">
+          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer"><input type="checkbox" checked={form.freeRenew} onChange={e => setForm({ ...form, freeRenew: e.target.checked })} className="w-4 h-4" />تجديد مجاني</label>
+          <label className="flex items-center gap-2 text-sm text-slate-300">النسخ:<select value={printCopies} onChange={e => setPrintCopies(Number(e.target.value))} className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 text-xs text-white"><option value={1}>كرت</option><option value={2}>كرتين</option></select></label>
+        </div>
+        <div className="mt-4 flex gap-2 flex-wrap">
+          <button onClick={saveCard} className={btnSm + ' !px-6'}><Save size={16}/> حفظ بيانات حالة</button>
+          {editingCard && <button onClick={() => printCard(editingCard)} className="rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold px-4 py-2.5 text-sm flex items-center gap-2"><PrinterIcon size={16}/> كرت معاينة</button>}
+          {editingCard && <button onClick={() => openWhatsApp(editingCard)} className={btnSm + ' !bg-emerald-600 hover:!bg-emerald-500'}><MessageCircle size={16}/> واتساب</button>}
+          {editingCard && <button onClick={() => sendSMS(editingCard)} className={btnGhost}>📱 SMS</button>}
+          <button onClick={undo} disabled={undoStack.length === 0} className={btnGhost + ' disabled:opacity-40'}>↶ التراجع</button>
+          <button onClick={() => setShowDaily(true)} className={btnGhost}>📊 اليومية</button>
+          <button onClick={() => setShowWaiting(true)} className={btnGhost}>⏳ الانتظار ({waitingCount})</button>
+          {editingCard && <button onClick={() => renewCard(editingCard, form.freeRenew)} className="rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold px-4 py-2.5 text-sm flex items-center gap-2"><RefreshCw size={16}/> تجديد</button>}
+        </div>
+      </div>
+
+      <div className="flex gap-2 flex-wrap items-center">
+        <Filter size={14} className="text-slate-500"/><span className="text-xs text-slate-400">فلتر:</span>
+        <button onClick={() => setFilter('all')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300')}>الكل ({cards.length})</button>
+        <button onClick={() => setFilter('incomplete')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'incomplete' ? 'bg-amber-600 text-white' : 'bg-white/5 text-slate-300')}>لم يكمل ({cards.filter((c: any) => !c.completed).length})</button>
+        <button onClick={() => setFilter('completed')} className={'px-3 py-1.5 rounded-lg text-xs transition ' + (filter === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300')}>أكمل ({cards.filter((c: any) => c.completed).length})</button>
+      </div>
+
+      <div className={card + ' !p-0 overflow-hidden'}>
+        <div className="p-3 border-b border-white/10"><h3 className="font-bold text-white text-sm">سجل الحالات - {filtered.length}</h3></div>
+        <div className="overflow-auto">
+          <table className="w-full text-sm min-w-[900px]">
+            <thead className="bg-white/5 text-slate-400 text-xs"><tr><th className="text-right px-3 py-3">البطاقة</th><th className="text-right px-3 py-3">الاسم</th><th className="text-right px-3 py-3">العمر</th><th className="text-right px-3 py-3">النوع</th><th className="text-right px-3 py-3">الجوال</th><th className="text-right px-3 py-3">الطبيب</th><th className="text-right px-3 py-3">التسجيل</th><th className="text-right px-3 py-3">الحالة</th><th className="text-right px-3 py-3">إجراءات</th></tr></thead>
+            <tbody className="divide-y divide-white/5">
+              {filtered.length === 0 ? <tr><td colSpan={9} className="p-6 text-center text-slate-500">لا توجد حالات</td></tr> :
+                filtered.map((c: any) => (<tr key={c.cardNumber} className="hover:bg-white/5">
+                  <td className="px-3 py-2 font-mono text-blue-300 text-xs" dir="ltr">#{c.cardNumber}</td>
+                  <td className="px-3 py-2 text-white">{c.name}</td>
+                  <td className="px-3 py-2 text-slate-300">{c.age || '—'}</td>
+                  <td className="px-3 py-2 text-slate-300">{c.gender}</td>
+                  <td className="px-3 py-2 text-slate-300" dir="ltr">{c.phone}</td>
+                  <td className="px-3 py-2 text-slate-300 text-xs">{c.doctor || '—'}</td>
+                  <td className="px-3 py-2 text-slate-400 text-xs" dir="ltr">{fmtDateTime(c.createdAt)}</td>
+                  <td className="px-3 py-2"><button onClick={() => toggleCompleted(c)} className={'text-xs px-2 py-1 rounded ' + (c.completed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300')}>{c.completed ? '✓ مكتمل' : '⏳ جاري'}</button></td>
+                  <td className="px-3 py-2"><div className="flex gap-1 flex-wrap">
+                    <button onClick={() => editCard(c)} className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400"><Edit3 size={14}/></button>
+                    <button onClick={() => printCard(c)} className="p-1.5 rounded hover:bg-purple-500/20 text-purple-400"><PrinterIcon size={14}/></button>
+                    <button onClick={() => openWhatsApp(c)} className="p-1.5 rounded hover:bg-emerald-500/20 text-emerald-400"><MessageCircle size={14}/></button>
+                    <button onClick={() => renewCard(c, false)} className="p-1.5 rounded hover:bg-amber-500/20 text-amber-400"><RefreshCw size={14}/></button>
+                    <button onClick={() => setPage('session-booking')} className="p-1.5 rounded hover:bg-cyan-500/20 text-cyan-400"><Calendar size={14}/></button>
+                  </div></td>
+                </tr>))}
+            </tbody>
+     
